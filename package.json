@@ -1,0 +1,39 @@
+{
+  "name": "meaning-map",
+  "description": "Library for classifying text phrases to a predefined set of meanings",
+  "main": "dist/meaning-map.cjs.js",
+  "module": "dist/meaning-map.esm.js",
+  "types": "dist/types/index.d.ts",
+  "private": false,
+  "license": "MIT",
+  "author": "Erik Hermansen",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+  "build:types": "tsc -p tsconfig.build.json",
+  "build:bundle": "vite build",
+  "build": "npm run build:bundle && npm run build:types",
+  "pack": "npm run build && npm pack",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+  "eslint": "^9.32.0",
+  "terser": "^5.43.1",
+  "@types/node": "^20.11.0",
+  "vite": "^7.0.6",
+  "vitest": "^3.2.4"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "sideEffects": false
+}
