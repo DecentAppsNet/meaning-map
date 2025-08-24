@@ -2,12 +2,11 @@ import path from 'path';
 import crypto from 'crypto';
 import LlmMessage from './types/LlmMessage';
 import { readJsonFile, writeJsonFile } from '../common/fileUtil';
+import Cache, { isCacheFormat } from './types/Cache';
 
 const CACHE_FILENAME = path.resolve(process.cwd(), 'node_modules', '.meaning_map_prompt_cache.json');
 
-type CacheShape = Record<string, string>;
-
-let theCache:CacheShape|null = null;
+let theCache:Cache|null = null;
 
 export function getRequestHash(messages:LlmMessage[]): string {
 	// Create a stable string representation and hash it with a fast non-crypto hash (SHA1 ok for collisions here)
@@ -18,13 +17,13 @@ export function getRequestHash(messages:LlmMessage[]): string {
 
 export async function getCachedResponse(requestHash:string): Promise<string | null> {
 	/* v8 ignore next */
-	if (!theCache) theCache = await readJsonFile<CacheShape>(CACHE_FILENAME, {});
+	if (!theCache) theCache = await readJsonFile<Cache>(CACHE_FILENAME, {}, isCacheFormat);
 	return theCache[requestHash] ?? null;
 }
 
 export async function upsertCachedResponse(requestHash:string, response: string) {
 	/* v8 ignore next */
-	if (!theCache) theCache = await readJsonFile<CacheShape>(CACHE_FILENAME, {});
+	if (!theCache) theCache = await readJsonFile<Cache>(CACHE_FILENAME, {}, isCacheFormat);
 	theCache[requestHash] = response;
 	// Fire-and-forget write
 	void writeJsonFile(CACHE_FILENAME, theCache).catch((err) => { 

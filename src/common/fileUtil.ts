@@ -11,14 +11,21 @@ export async function ensureDir(dirPath:string): Promise<void> {
   }
 }
 
-export async function readJsonFile<T>(filePath:string, defaultValue:T): Promise<T> {
+export async function readJsonFile<T>(filePath:string, defaultValue:T, validator?: (v:any)=>boolean): Promise<T> {
   try {
     const txt = await fs.readFile(filePath, { encoding: 'utf8' });
-    return JSON.parse(txt) as T;
+    const parsed = JSON.parse(txt);
+    if (validator && !validator(parsed)) throw new Error('Invalid format');
+    return parsed as T;
   } catch (err: any) {
     // If file doesn't exist or parse fails, return default
     return defaultValue;
   }
+}
+
+export async function readTextFile(filePath:string): Promise<string> {
+  const text:string = await fs.readFile(filePath, { encoding: 'utf8' });
+  return text;
 }
 
 export async function writeJsonFile(filePath:string, data:unknown): Promise<void> {

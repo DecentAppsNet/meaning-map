@@ -11,5 +11,6 @@ For developers, maintainers, and AIs contributing to the project.
 - Spacing convention for type annotations vs value assignments:
 	- Type annotations should not have a space after the colon (example: `body:unknown`).
 	- Ordinary value assignments or object member values should have a space after the colon for readability (example: `x: 3`).
+- Regular expressions should be encapsulated in function calls that describe completely what they do, e.g. `isAlphaNumericAsciiChar(c)`. If the name of the function would need to be much larger than 30 characters or so to describe the functionality, the RegEx is too complex, and should be broken up or omitted by using using non-regex parsing code.
 
 These conventions are intentionally small and pragmatic; follow existing style where it already exists and apply these rules to new code.

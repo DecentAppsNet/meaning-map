@@ -3,8 +3,11 @@ let theCache: Record<string, string> = {};
 
 // Mocks first before importing modules that may use them.
 vi.mock("../../common/fileUtil", async () => ({
-  readJsonFile: vi.fn(async () => Promise.resolve(theCache)),
-  writeJsonFile: vi.fn(async (_filePath, data) => { theCache = data; })
+  readJsonFile: vi.fn(async (_filePath:string, _defaultValue:any, validator?: (v:any)=>boolean) => {
+    if (validator && !validator(theCache)) throw new Error('Invalid format');
+    return Promise.resolve(theCache);
+  }),
+  writeJsonFile: vi.fn(async (_filePath:string, data) => { theCache = data; })
 }));
 
 // Imports after mocks.
@@ -60,12 +63,24 @@ describe('promptCache', () => {
   describe('clearCache()', () => {
     it('clears existing entries so subsequent reads return null', async () => {
       await upsertCachedResponse('z', 'to-be-cleared');
-      
+
       // ensure present
       expect(await getCachedResponse('z')).toBe('to-be-cleared');
 
       await clearCache();
       expect(await getCachedResponse('z')).toBeNull();
+    });
+
+    it('throws when the backing JSON is an invalid format', async () => {
+      // place invalid structure in the mocked backing store
+      // (e.g., an array instead of an object)
+      (theCache as any) = [];
+
+      // Force promptCache to be reloaded so its internal cache is cleared and readJsonFile is invoked
+      vi.resetModules();
+      const { getCachedResponse: getCachedResponse2 } = await import('../promptCache');
+
+      await expect(getCachedResponse2('any')).rejects.toThrow();
     });
   });
 });

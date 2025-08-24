@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNonGlobalRegex, escapeRegexCharacters } from '../regExUtil';
+import { createNonGlobalRegex, escapeRegexCharacters, extractAllCapsWords, findNonWhitespace, findWhitespace, isWhiteSpaceChar, isDigitChar } from '../regExUtil';
 
 describe('regExUtil', () => {
   describe('escapeRegexCharacters()', () => {
@@ -50,6 +50,63 @@ describe('regExUtil', () => {
       const regex = /(?:)/;
       const result = createNonGlobalRegex(regex);
       expect(result).toBe(regex);
+    });
+  });
+
+  describe('extractAllCapsWords()', () => {
+    it('returns empty for empty string', () => {
+      expect(extractAllCapsWords('')).toEqual([]);
+    });
+
+    it('returns empty for single uppercase letter', () => {
+      expect(extractAllCapsWords('X')).toEqual([]);
+    });
+
+    it('returns a two-letter uppercase token', () => {
+      expect(extractAllCapsWords('XX')).toEqual(['XX']);
+    });
+
+    it('returns empty for mixed-case variants', () => {
+      expect(extractAllCapsWords('xXX')).toEqual([]);
+      expect(extractAllCapsWords('XxX')).toEqual([]);
+      expect(extractAllCapsWords('XXx')).toEqual([]);
+    });
+
+    it('returns empty when text contains no all-caps words', () => {
+      expect(extractAllCapsWords('no caps here')).toEqual([]);
+    });
+  });
+
+  describe('isWhiteSpaceChar()', () => {
+    it('detects whitespace characters', () => {
+      expect(isWhiteSpaceChar(' ')).toBe(true);
+      expect(isWhiteSpaceChar('\t')).toBe(true);
+      expect(isWhiteSpaceChar('a')).toBe(false);
+    });
+  });
+
+  describe('isDigitChar()', () => {
+    it('detects digit characters', () => {
+      expect(isDigitChar('0')).toBe(true);
+      expect(isDigitChar('9')).toBe(true);
+      expect(isDigitChar('a')).toBe(false);
+      expect(isDigitChar('.')).toBe(false);
+    });
+  });
+
+  describe('findWhitespace()', () => {
+    it('finds index of first whitespace', () => {
+      expect(findWhitespace('abc def')).toBe(3);
+      expect(findWhitespace('abc')).toBe(-1);
+      expect(findWhitespace('   ')).toBe(0);
+    });
+  });
+
+  describe('findNonWhitespace()', () => {
+    it('finds index of first non-whitespace', () => {
+      expect(findNonWhitespace('   abc')).toBe(3);
+      expect(findNonWhitespace('abc')).toBe(0);
+      expect(findNonWhitespace('   ')).toBe(-1);
     });
   });
 });
