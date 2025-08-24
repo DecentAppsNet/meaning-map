@@ -1,9 +1,5 @@
-// Minimal library entrypoint for Meaning Map.
+/* v8 ignore start */
 
-/** Library version */
-export const VERSION = '1.0.0';
+export { importMeaningIndex, parseMeaningIndex } from './impexp/meaningIndexImporter';
 
-/** Placeholder API: replace with real exports for your library. */
-export function hello(name: string) {
-	return `Hello, ${name}`;
-}
+/* v8 ignore end */

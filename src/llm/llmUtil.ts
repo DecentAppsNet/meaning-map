@@ -28,7 +28,7 @@ export async function prompt(promptMessage:string, systemMessage:string, nShotPa
 		messages.push({ role: 'system', content: systemMessage });
 	}
 
-	for (const pair of nShotPairs || []) {
+	for (const pair of nShotPairs) {
 		messages.push({ role: 'user', content: pair.userMessage });
 		messages.push({ role: 'assistant', content: pair.assistantResponse });
 	}
