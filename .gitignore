@@ -14,6 +14,7 @@ dist-ssr
 *.local
 sl-react-ui-*.tgz
 .tsBuild
+workAssets
 
 # Editor directories and files
 .vscode/*
