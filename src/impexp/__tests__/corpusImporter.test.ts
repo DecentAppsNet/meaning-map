@@ -34,5 +34,15 @@ describe('corpusImporter', () => {
       const txt = `a\n   \t  \nb`;
       expect(parseCorpus(txt)).toEqual(['a', 'b']);
     });
+
+    it('dedupes identical normalized lines', () => {
+      const txt = `Hello world\nhello   world\nHELLO WORLD`;
+      expect(parseCorpus(txt)).toEqual(['hello world']);
+    });
+
+    it('collapses internal whitespace to a single space', () => {
+      const txt = `a\t\t  b   c`;
+      expect(parseCorpus(txt)).toEqual(['a b c']);
+    });
   });
 });
