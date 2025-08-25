@@ -47,7 +47,7 @@ ASSISTANT: No
 
 import { assert } from '../common/assertUtil';
 import Meaning from './types/Meaning';
-import MeaningIndex from './types/MeaningIndex';
+import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from './types/MeaningIndex';
 import { readTextFile } from '../common/fileUtil';
 import { extractAllCapsWords, isDigitChar, isWhiteSpaceChar } from '../common/regExUtil';
 
@@ -130,6 +130,7 @@ export function parseMeaningIndex(text:string):MeaningIndex {
 
     const meaningId = _parseNumberedHeading(line);
     if (meaningId) {
+      if (meaningId === UNCLASSIFIED_MEANING_ID) throw Error(`Invalid meaning ID of "0" (reserved value) at line ${lineI + 1}.`);
       _flushCurrentMeaning();
       const description = _parseDescription(line, meaningId);
       const params = _extractParams(description);

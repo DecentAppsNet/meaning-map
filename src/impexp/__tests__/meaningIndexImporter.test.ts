@@ -55,6 +55,10 @@ describe('meaningIndexImporter', () => {
       it('rejects a numbered heading immediately followed by description with no whitespace', () => {
         expect(parseMeaningIndex('1.Adding')).toEqual({});
       });
+
+      it('throws when encountering reserved meaning ID "0"', () => {
+        expect(() => parseMeaningIndex('0.')).toThrow();
+      });
     });
 
     describe('when parsing description after numbered headings', () => {
