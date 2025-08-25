@@ -21,6 +21,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/wink-pos-tagger": "^2.2.6",
+    "@types/wink-tokenizer": "^4.0.6",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "@vitest/coverage-v8": "^3.2.4",
