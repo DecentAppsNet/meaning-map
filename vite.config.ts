@@ -30,10 +30,16 @@ export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),
-      name: 'decent-portal',
-      formats: ['es', 'umd']
+      name: 'meaning-map',
+      // produce ES and CommonJS builds for Node consumers
+      formats: ['es', 'cjs']
     },
+    // target Node so built-in modules (fs, path) are resolved from Node, not
+    // externalized for browser compatibility
+    target: 'node22',
     rollupOptions: {
+      // keep Node built-ins external when bundling for Node
+      external: ['fs', 'fs/promises', 'path', 'crypto'],
       output: { dir: 'dist' }
     },
     minify: 'terser',

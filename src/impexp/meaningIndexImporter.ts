@@ -56,10 +56,31 @@ function _stripTrailingDot(text:string):string {
   return text.endsWith('.') ? text.slice(0, -1) : text;
 }
 
-
 function _extractParams(description:string):string[] {
   const params = extractAllCapsWords(description);
   return Array.from(new Set(params)); // Exclude redundant params.
+}
+
+function _createParentMeaningId(meaningId:string):string {
+  const lastDotPos = meaningId.lastIndexOf('.');
+  return (lastDotPos === -1) ? UNCLASSIFIED_MEANING_ID : meaningId.substring(0, lastDotPos);
+}
+
+function _updateMeaningIdLinks(index:MeaningIndex) {
+  const ids:string[] = Object.keys(index);
+  // First pass: compute parentMeaningId for every meaning and reset child lists.
+  ids.forEach(id => {
+    index[id].parentMeaningId = _createParentMeaningId(id);
+    index[id].childMeaningIds = [];
+  });
+
+  // Second pass: populate child lists for parents that exist and are not UNCLASSIFIED.
+  ids.forEach(id => {
+    const parentMeaningId = index[id].parentMeaningId;
+    if (parentMeaningId === UNCLASSIFIED_MEANING_ID) return;
+    const parentMeaning = index[parentMeaningId];
+    if (parentMeaning) parentMeaning.childMeaningIds.push(id);
+  });
 }
 
 // Parse a numbered heading at the start of the line and return a normalized id
@@ -134,7 +155,7 @@ export function parseMeaningIndex(text:string):MeaningIndex {
       _flushCurrentMeaning();
       const description = _parseDescription(line, meaningId);
       const params = _extractParams(description);
-      currentMeaning = { meaningId, description, params, promptInstructions: '', nShotPairs: []};
+      currentMeaning = { meaningId, description, params, promptInstructions: '', nShotPairs: [], parentMeaningId:'', childMeaningIds:[]};
       continue;
     }
 
@@ -158,6 +179,7 @@ export function parseMeaningIndex(text:string):MeaningIndex {
   // flush last
   _flushCurrentMeaning();
 
+  _updateMeaningIdLinks(index);
   return index;
 }
 

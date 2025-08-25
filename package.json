@@ -23,12 +23,12 @@
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.32.0",
     "terser": "^5.43.1",
     "typescript": "^5.8.3",
     "vite": "^7.0.6",
-    "vitest": "^3.2.4",
-    "@vitest/coverage-v8": "^3.2.4"
+    "vitest": "^3.2.4"
   },
   "files": [
     "dist",
@@ -36,5 +36,8 @@
     "LICENSE",
     "package.json"
   ],
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "wink-pos-tagger": "^2.2.2"
+  }
 }

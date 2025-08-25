@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseMeaningIndex } from '../meaningIndexImporter';
+import { UNCLASSIFIED_MEANING_ID } from '../types/MeaningIndex';
 
 describe('meaningIndexImporter', () => {
   describe('parseMeaningIndex()', () => {
@@ -9,35 +10,35 @@ describe('meaningIndexImporter', () => {
 
    describe('when parsing numbered headings', () => {
       it('parses one-level heading with trailing dot', () => {
-        expect(parseMeaningIndex('1.')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('parses one-level heading without trailing dot', () => {
-        expect(parseMeaningIndex('1')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('parses heading number followed by description', () => {
-        expect(parseMeaningIndex('1. Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1. Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('parses heading number followed by another numbered heading', () => {
-        expect(parseMeaningIndex('1. 1.')).toEqual({ '1': { meaningId: '1', description: '1.', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1. 1.')).toEqual({ '1': { meaningId: '1', description: '1.', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('parses nested heading "1.1"', () => {
-        expect(parseMeaningIndex('1.1')).toEqual({ '1.1': { meaningId: '1.1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.1')).toEqual({ '1.1': { meaningId: '1.1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: '1', childMeaningIds: [] } });
       });
 
       it('parses nested heading with trailing dot "1.1."', () => {
-        expect(parseMeaningIndex('1.1.')).toEqual({ '1.1': { meaningId: '1.1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.1.')).toEqual({ '1.1': { meaningId: '1.1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: '1', childMeaningIds: [] } });
       });
 
       it('parses deeper nested heading "1.1.1"', () => {
-        expect(parseMeaningIndex('1.1.1')).toEqual({ '1.1.1': { meaningId: '1.1.1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.1.1')).toEqual({ '1.1.1': { meaningId: '1.1.1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: '1.1', childMeaningIds: [] } });
       });
 
       it('parses deeper nested heading with trailing dot "1.1.1."', () => {
-        expect(parseMeaningIndex('1.1.1.')).toEqual({ '1.1.1': { meaningId: '1.1.1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.1.1.')).toEqual({ '1.1.1': { meaningId: '1.1.1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: '1.1', childMeaningIds: [] } });
       });
 
       it('rejects invalid numeric-like tokens (no heading created)', () => {
@@ -45,11 +46,11 @@ describe('meaningIndexImporter', () => {
       });
 
       it('parses heading preceded by whitespace', () => {
-        expect(parseMeaningIndex('   1.')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('   1.')).toEqual({ '1': { meaningId: '1', description: '', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('handles extra whitespace after dot before description', () => {
-        expect(parseMeaningIndex('1.   Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.   Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('rejects a numbered heading immediately followed by description with no whitespace', () => {
@@ -63,11 +64,11 @@ describe('meaningIndexImporter', () => {
 
     describe('when parsing description after numbered headings', () => {
       it('parses description after one-level heading', () => {
-        expect(parseMeaningIndex('1. Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1. Adding')).toEqual({ '1': { meaningId: '1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: UNCLASSIFIED_MEANING_ID, childMeaningIds: [] } });
       });
 
       it('parses description after nested heading', () => {
-        expect(parseMeaningIndex('1.1. Adding')).toEqual({ '1.1': { meaningId: '1.1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [] } });
+        expect(parseMeaningIndex('1.1. Adding')).toEqual({ '1.1': { meaningId: '1.1', description: 'Adding', params: [], promptInstructions: '', nShotPairs: [], parentMeaningId: '1', childMeaningIds: [] } });
       });
     });
 
@@ -175,6 +176,17 @@ describe('meaningIndexImporter', () => {
         const sample = `1. A\n\n2. B`;
         const res = parseMeaningIndex(sample);
         expect(Object.keys(res)).toEqual(['1', '2']);
+      });
+
+      it('assigns parentMeaningId and childMeaningIds for hierarchical ids', () => {
+        const sample = `1. Parent\n\n1.1. Child\n\n1.1.1. Grandchild`;
+        const res = parseMeaningIndex(sample);
+        expect(res['1'].parentMeaningId).toBe(UNCLASSIFIED_MEANING_ID);
+        expect(res['1'].childMeaningIds).toEqual(['1.1']);
+        expect(res['1.1'].parentMeaningId).toBe('1');
+        expect(res['1.1'].childMeaningIds).toEqual(['1.1.1']);
+        expect(res['1.1.1'].parentMeaningId).toBe('1.1');
+        expect(res['1.1.1'].childMeaningIds).toEqual([]);
       });
     });
   });
