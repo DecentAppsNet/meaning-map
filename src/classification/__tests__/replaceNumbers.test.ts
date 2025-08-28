@@ -31,4 +31,14 @@ describe('replaceNumbers', () => {
     const input = 'i have one hundred and uh three';
     expect(replaceNumbers(input)).toBe('i have NUMBER');
   });
+
+  it('replaces two separate numbers with NUMBER and NUMBER2', () => {
+    const input = 'i have one apple and two oranges';
+    expect(replaceNumbers(input)).toBe('i have NUMBER apple and NUMBER2 oranges');
+  });
+
+  it('replaces multiple-word number sequences separately as NUMBER and NUMBER2', () => {
+    const input = 'we bought one hundred and twenty five apples and thirty oranges';
+    expect(replaceNumbers(input)).toBe('we bought NUMBER apples and NUMBER2 oranges');
+  });
 });

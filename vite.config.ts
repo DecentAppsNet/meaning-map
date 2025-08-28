@@ -38,8 +38,15 @@ export default defineConfig({
     // externalized for browser compatibility
     target: 'node22',
     rollupOptions: {
-      // keep Node built-ins external when bundling for Node
-      external: ['fs', 'fs/promises', 'path', 'crypto'],
+      // keep Node built-ins and heavy inference libs external when bundling for Node
+      external: [
+        'fs', 'fs/promises', 'path', 'crypto',
+        // Externalize transformers to avoid bundling browser-oriented chunks
+        '@xenova/transformers',
+        // Also ensure ONNX runtimes are not inlined; let Node resolve them
+        'onnxruntime-node',
+        'onnxruntime-web'
+      ],
       output: { dir: 'dist' }
     },
     minify: 'terser',

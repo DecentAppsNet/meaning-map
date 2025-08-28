@@ -15,6 +15,10 @@ For developers, maintainers, and AIs contributing to the project.
 
 These conventions are intentionally small and pragmatic; follow existing style where it already exists and apply these rules to new code.
 
+## Agent interaction / Shell policy
+
+- Do not request or assume shell access. When suggesting commands, provide them as copyable lines. Agent can suggest that the user run them on the agent's behalf.
+
 ## Unit Testing Conventions
 
 - Test contracts, not implemementation details.

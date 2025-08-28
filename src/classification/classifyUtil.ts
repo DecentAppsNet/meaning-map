@@ -8,9 +8,10 @@ import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from "@/impexp/types/MeaningInd
 import { replaceNumbers } from "./replaceNumbers";
 import { replaceItems } from "./replaceItems";
 
-function _makeReplacements(utterance:string):string {
-  utterance = replaceNumbers(utterance);
-  utterance = replaceItems(utterance);
+async function _makeReplacements(utterance:string):Promise<string> {
+  // This logic is coupled to Bintopia. Think about generalizing it later.
+  utterance = await replaceItems(utterance); // Numbers might be part of ITEMS, e.g. "two apples".
+  utterance = replaceNumbers(utterance); // Numbers that aren't part of ITEMS will be NUMBERS.
   return utterance;
 }
 
@@ -61,7 +62,7 @@ async function _classifyUtterance(utterance:string, meaningIndex:MeaningIndex, p
 export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promise<MeaningClassifications> {
   const classifications:MeaningClassifications = {};
   corpus.forEach(async (utterance:string) => {
-    utterance = _makeReplacements(utterance);
+    utterance = await _makeReplacements(utterance);
     const meaningId = await _classifyUtterance(utterance, meaningIndex);
     if (!classifications[meaningId]) classifications[meaningId] = [];
     classifications[meaningId].push(utterance);
