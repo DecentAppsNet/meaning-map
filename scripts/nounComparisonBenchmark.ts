@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { initCli } from './helpers/initializeUtil.js';
+import { initCli } from './helpers/initializeUtil.ts';
 
 // Format is [noun, [similar nouns], [dissimilar nouns]]
 const NOUNS_TO_COMPARE = [

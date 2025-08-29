@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { initCli } from './helpers/initializeUtil.js';
+import { initCli } from './helpers/initializeUtil.ts';
 
 async function main() {
   initCli();

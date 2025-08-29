@@ -50,7 +50,7 @@ export function clearEmbeddingCache(): void {
 }
 
 export async function embedSentence(sentence:string):Promise<UnitVector> {
-  if (!initialized || !extractor) await initTransformersEmbedder();
+  if (!initialized) await initTransformersEmbedder();
   const key = sentence.trim().toLowerCase();
   const cached = vectorCache.get(key);
   if (cached) return cached;
