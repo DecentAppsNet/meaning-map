@@ -6,8 +6,8 @@ import { getRequestHash, getCachedResponse, upsertCachedResponse } from './promp
 // Defaults (can be overridden via environment variables)
 const DEFAULT_STREAM = false;
 const DEFAULT_TEMPERATURE = 0;
-const DEFAULT_OPENAI_URL = process.env.OPENAI_API_BASE ?? 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? 'gpt-3.5-turbo';
+const DEFAULT_OPENAI_URL = process.env.OPENAI_API_BASE ?? 'http://localhost:11434/v1/chat/completions';
+const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? 'llama3';
 
 /**
  * Send a prompt to OpenAI Chat Completions using only Node built-ins.
@@ -19,8 +19,7 @@ const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? 'gpt-3.5-turbo';
  * - OPENAI_MODEL: optional, overrides the model (defaults to gpt-3.5-turbo)
  */
 export async function prompt(promptMessage:string, systemMessage:string, nShotPairs:NShotPair[]):Promise<string> {
-	const apiKey = process.env.OPENAI_API_KEY;
-	if (!apiKey) throw new Error('OPENAI_API_KEY is not set in environment');
+	const apiKey = process.env.OPENAI_API_KEY || 'FAKE';
 
 	// Assemble messages: system, then n-shot pairs, then the user's prompt
 	const messages: LlmMessage[] = [];

@@ -4,7 +4,7 @@ import LlmMessage from './types/LlmMessage';
 import { readJsonFile, writeJsonFile } from '../common/fileUtil';
 import Cache, { isCacheFormat } from './types/Cache';
 
-const CACHE_FILENAME = path.resolve(process.cwd(), 'node_modules', '.meaning_map_prompt_cache.json');
+const CACHE_FILENAME = path.resolve(process.cwd(), 'cache', '.llm_prompt_cache.json');
 
 let theCache:Cache|null = null;
 

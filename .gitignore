@@ -17,6 +17,10 @@ sl-react-ui-*.tgz
 workAssets
 cache/transformers/*
 !cache/transformers/.gitkeep
+cache/*.json
+cache/*.txt
+cache/*.md
+datasets/*
 
 # Editor directories and files
 .vscode/*
