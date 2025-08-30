@@ -24,9 +24,6 @@ export function findNonWhitespace(text:string, startPos:number = 0):number {
   return -1;
 }
 
-
-
-
 export function extractAllCapsWords(text:string):string[] {
   const out:string[] = [];
   const re = /\b([A-Z]{2,})\b/g;

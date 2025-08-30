@@ -1,50 +1,3 @@
-/*
-### Meaning Index
-
-Input: Authored.
-
-Lines that begin with #s, e.g. "1." indicate the start of a meaning section. The number is parsed as a meaning ID. 
-The remainder of the line as a meaning description.
-All-caps words appearing inside the meaning description are parsed as params.
-
-The lines that follow within the meaning section are parsed as follows:
-* Prefixed with "USER:" indicates the user prompt of an n-shot pair.
-* Prefixed with "ASSISTANT:" indicates the assistant respons of an n-shot pair.
-* Any other non-empty line in the meaning section is parsed as agent instructions.
-
-Hierarchies in meaning IDs are used to group utterances first to a more general meaning and potentially to a more specific meaning in a later pass.
-
-Example file:
-```
-1. Adding
-User declares or implies they are adding items to a container.
-
-USER: adding
-ASSISTANT: Maybe
-
-USER: adding to bin
-ASSISTANT: Yes
-
-USER: let's put some stuff in
-ASSISTANT: Yes
-
-USER: let's look at this bin
-ASSISTANT: No
-
-USER: should I add something
-ASSISTANT: Maybe
-
-1.1. Adding ITEMS
-User specifies one or more specific, physical items to add to a container (ITEMS). They do not specify a number that would identify a container.
-
-USER: add a hammer
-ASSISTANT: Yes
-
-USER: add a hammer to number seven
-ASSISTANT: No
-```
-*/
-
 import { assert } from '../common/assertUtil';
 import Meaning from './types/Meaning';
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from './types/MeaningIndex';
@@ -144,14 +97,12 @@ export function parseMeaningIndex(text:string):MeaningIndex {
     currentMeaning = null;
   };
 
-
   for (let lineI = 0; lineI < lines.length; ++lineI) {
     const line = lines[lineI].trim();
     if (line.length === 0) continue; // skip blank lines
 
     const meaningId = _parseNumberedHeading(line);
     if (meaningId) {
-      if (meaningId === UNCLASSIFIED_MEANING_ID) throw Error(`Invalid meaning ID of "0" (reserved value) at line ${lineI + 1}.`);
       _flushCurrentMeaning();
       const description = _parseDescription(line, meaningId);
       const params = _extractParams(description);

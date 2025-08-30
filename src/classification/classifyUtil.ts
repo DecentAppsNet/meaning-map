@@ -1,4 +1,4 @@
-import { assertNonNullable } from "@/common/assertUtil";
+import { assertNonNullable, assert } from "@/common/assertUtil";
 import { importCorpus } from "@/impexp/corpusImporter";
 import { exportMeaningClassifications } from "@/impexp/meaningClassificationsExporter";
 import { importMeaningIndex } from "@/impexp/meaningIndexImporter";
@@ -8,6 +8,8 @@ import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from "@/impexp/types/MeaningInd
 import { replaceNumbers } from "./replaceNumbers";
 import { replaceItems } from "./replaceItems";
 import { prompt } from "@/llm/llmUtil";
+import NShotPair from "@/llm/types/NShotPair";
+import { isDigitChar } from "@/common/regExUtil";
 
 async function _makeReplacements(utterance:string):Promise<string> {
   // This logic is coupled to Bintopia. Think about generalizing it later.
@@ -37,8 +39,100 @@ async function _evaluateMeaningMatch(utterance:string, meaning:Meaning):Promise<
   return 'M';
 }
 
-async function _findBestMeaningMatch(_utterance:string, _meaningIndex:MeaningIndex, _meaningIds:string[]) {
-  return UNCLASSIFIED_MEANING_ID; // TODO
+// Find first contiguous sequence of digits and return as a number, or -1 if none found.
+function _parseNumberFromResponse(response:string):number {
+  response = response.trim();
+  let startPos = 0;
+  while(startPos < response.length && !isDigitChar(response[startPos])) ++startPos;
+  if (startPos === response.length) return -1;
+  let endPos = startPos + 1;
+  while(endPos < response.length && isDigitChar(response[endPos])) ++endPos;
+  return parseInt(response.substring(startPos, endPos));
+}
+
+function _concatCandidateMeanings(meaningIds:string[], meaningIndex:MeaningIndex):string {
+  return meaningIds.map((id, i) => `${i} ${meaningIndex[id].promptInstructions}`).join('\n');
+}
+
+function _doesAnotherMeaningHaveSameNShotPair(meaningIndex:MeaningIndex, meaningId:string, nShotPair:NShotPair):boolean {
+  return Object.keys(meaningIndex).some(compareMeaningId => {
+    if (compareMeaningId === meaningId) return false;
+    const compareMeaning = meaningIndex[compareMeaningId];
+    for(let i = 0; i < compareMeaning.nShotPairs.length; ++i) {
+      const comparePair:NShotPair = compareMeaning.nShotPairs[i];
+      if (comparePair.userMessage === nShotPair.userMessage && comparePair.assistantResponse === nShotPair.assistantResponse) return true;
+    }
+    return false;
+  });
+}
+
+function _addNShotPairIfUserMessageUnique(pair:NShotPair, pairs:NShotPair[]) {
+  if (pairs.some(comparePair => comparePair.userMessage === pair.userMessage)) {
+    console.warn(`Duplicate n-shot pair found for userMessage of ${pair.userMessage}.`);
+    return;
+  }
+  pairs.push(pair);
+}
+
+function _combineMeaningNShotPairs(meaningIndex:MeaningIndex, meaningIds:string[]):NShotPair[] {
+  const combined:NShotPair[] = [];
+
+  // Add all "Y" pairs that don't have duplicates across different meanings. If any duplicates found, log a warning,
+  // because meanings at child level should have mutually exclusive positives in n-shot.
+  let parentMeaningId:string|null = null;
+  for(let i = 0; i < meaningIds.length; ++i) {
+    const meaningId = meaningIds[i];
+    const meaning = meaningIndex[meaningId];
+    assertNonNullable(meaning);
+    if (parentMeaningId === null) {
+      parentMeaningId = meaning.parentMeaningId;
+    } else {
+      assert(parentMeaningId === meaning.parentMeaningId, `All meanings passed should have same parent ID.`);
+    }
+    for (let j = 0; j < meaning.nShotPairs.length; ++j) {
+      const pair = meaning.nShotPairs[j];
+      if (pair.assistantResponse !== 'Y') continue;
+      const hasYesDuplicate = _doesAnotherMeaningHaveSameNShotPair(meaningIndex, meaningId, pair);
+      if (hasYesDuplicate) {
+        console.warn(`The same "Y" n-shot pair is used in 2 or more children of meaning ID ${meaning.parentMeaningId}. You should treat these "Y" examples at mutually exclusive for better classification.`);
+        continue;
+      }
+      _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:`${i}`}, combined);
+    }
+  }
+  
+  // If parent meaning ID is "0", add all "Y" pairs from UNCLASSIFIED_MEANING_ID.
+  assertNonNullable(parentMeaningId);
+  const parentMeaning = meaningIndex[parentMeaningId];
+  // assertNonNullable(parentMeaning); TODO - need update to import format. But then this code will work.
+  if (parentMeaningId !== UNCLASSIFIED_MEANING_ID && parentMeaning) { // TODO - remove && parentMeaning
+    parentMeaning.nShotPairs.forEach(pair => {
+      if (pair.assistantResponse === 'Y') {
+        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:UNCLASSIFIED_MEANING_ID}, combined);
+      }
+    });
+  } else { // Add all "N" pairs from parent meaning with UNCLASSIFIED_MEANING_ID as response.
+    parentMeaning.nShotPairs.forEach(pair => {
+      if (pair.assistantResponse === 'N') {
+        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:UNCLASSIFIED_MEANING_ID}, combined);
+      }
+    });
+  }
+
+  return combined;
+}
+
+async function _findBestMeaningMatch(utterance:string, meaningIndex:MeaningIndex, meaningIds:string[]):Promise<string> {
+  const candidateMeanings = _concatCandidateMeanings(meaningIds, meaningIndex); 
+  const SYSTEM_MESSAGE = `User will say a phrase. ` +
+    `Output the prefixing number of the best matching meaning from the following list of candidate meanings: \n` +
+    `${candidateMeanings}\n` +
+    `If none of the meanings are a good match, output "0". Do not output anything besides a single number.`;
+  const nShotPairs:NShotPair[] = _combineMeaningNShotPairs(meaningIndex, meaningIds);
+  const response = await prompt(utterance, SYSTEM_MESSAGE, nShotPairs, 8);
+  const meaningI = _parseNumberFromResponse(response);
+  if (meaningI === 0 || meaningI < 0 || meaningI >= meaningIds.length) return UNCLASSIFIED_MEANING_ID
+  return meaningIds[meaningI];
 }
 
 function _findMeaningIdsShortList(meaningIds:string[], evals:string[]):string[] {
@@ -83,4 +177,9 @@ export async function createMeaningClassification(corpusFilepath:string, meaning
   const meaningIndex = await importMeaningIndex(meaningIndexFilepath);
   const classifications = await classify(corpus, meaningIndex);
   exportMeaningClassifications(classifications, classificationFilepath, meaningIndex);
+}
+
+export const TestExports = {
+  _evaluateMeaningMatch,
+  _concatCandidateMeanings
 }
