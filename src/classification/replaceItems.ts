@@ -4,7 +4,7 @@ import TokenSpan from './types/TokenSpan';
 import { combineAdjacentAndOverlappingTokenSpans } from './spanUtil';
 import { findPrenominalModifiers, getSentenceTokens, combineConjunctionConnectedNounGroups } from './sentenceUtil';
 import { assert } from '../common/assertUtil';
-import { getPackableSet } from '@/datasets/datasetUtil';
+import { getPackableSet } from '@/impexp/datasetUtil';
 
 async function _mightBeAPhysicalObject(value:string, partOfSpeech:string):Promise<boolean> {
   if (partOfSpeech !== 'NOUN') return false; // TODO remove this once packables.txt is finished being generated.
