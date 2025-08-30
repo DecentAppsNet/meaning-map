@@ -18,7 +18,7 @@ const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? 'llama3';
  * - OPENAI_API_BASE: optional, override base URL (defaults to official API)
  * - OPENAI_MODEL: optional, overrides the model (defaults to gpt-3.5-turbo)
  */
-export async function prompt(promptMessage:string, systemMessage:string, nShotPairs:NShotPair[]):Promise<string> {
+export async function prompt(promptMessage:string, systemMessage:string = 'Respond concisely and accurately.', nShotPairs:NShotPair[] = [], maxTokens:number = 500):Promise<string> {
 	const apiKey = process.env.OPENAI_API_KEY || 'FAKE';
 
 	// Assemble messages: system, then n-shot pairs, then the user's prompt
@@ -44,6 +44,7 @@ export async function prompt(promptMessage:string, systemMessage:string, nShotPa
 		messages,
 		temperature: DEFAULT_TEMPERATURE,
 		stream: DEFAULT_STREAM,
+		max_tokens: maxTokens,
 	} as Record<string, unknown>;
 
 	const data: any = await fetchJsonWithAuth(DEFAULT_OPENAI_URL, apiKey, body);

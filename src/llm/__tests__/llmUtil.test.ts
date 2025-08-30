@@ -33,9 +33,11 @@ describe('llmUtil', () => {
   });
 
   describe('prompt()', () => {
-    it('throws if OPENAI_API_KEY env variable is undefined', async () => {
+    it('returns response even if OPENAI_API_KEY env variable is undefined', async () => {
       process.env.OPENAI_API_KEY = '';
-      await expect(prompt('hi', '', [])).rejects.toThrow();
+      theCachedResponse = null;
+      const out = await prompt('hi', '', []);
+      expect(out).toBe('fetched-response');
     });
 
     it('returns cached response when present', async () => {

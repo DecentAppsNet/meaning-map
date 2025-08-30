@@ -10,7 +10,9 @@ const ASCII_RESET = '\u001b[0m';
 
 async function _isPackableObject(noun:string):Promise<boolean> {
   const promptMessage = noun;
-  const systemMessage = 'User will say the name of something. If it is a specific, physical object that could be put inside of a cardboard box, output the single character "Y". Otherwise output "N".';
+  const systemMessage = 'User will say the name of something. ' + 
+    'If it is a specific, physical object that could be put inside of a cardboard box, ' + 
+    'output the single character "Y". Otherwise output "N".';
   const nShotPairs:NShotPair[] = [
     {userMessage: 'cat', assistantResponse: 'N'},
     {userMessage: 'guitar', assistantResponse: 'Y'},

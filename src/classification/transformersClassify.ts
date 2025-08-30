@@ -1,3 +1,4 @@
+/* v8 ignore start */ // This module is all glue. If anything with good test value emerges, refactor it to a separate module. */
 import { assertNonNullable } from '@/common/assertUtil';
 import { pipeline, env } from '@xenova/transformers';
 
@@ -31,3 +32,4 @@ export async function classify(premise:string, hypotheses:string[]) {
   const res = await classifier(premise, hypotheses, { multi_label: false });
   return res;
 }
+/* v8 ignore end */

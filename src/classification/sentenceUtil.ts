@@ -1,6 +1,9 @@
 import { ItemToken } from "wink-nlp";
+
 import { getNlp } from "./nlpUtil";
 import SentenceToken from "./types/SentenceToken";
+import TokenSpan from "./types/TokenSpan";
+import { assert } from "../common/assertUtil";
 
 function _getPreviousTokenPartOfSpeech(sentenceTokens:SentenceToken[], index:number):string {
   return index > 0 ? sentenceTokens[index - 1].partOfSpeech : '';
@@ -99,7 +102,40 @@ export function getSentenceTokens(sentence:string):SentenceToken[] {
     const fromPos = currentPos;
     currentPos += value.length;
     const toPos = currentPos;
-  sentenceTokens.push({ value, fromPos, toPos, partOfSpeech });
+    sentenceTokens.push({ value, fromPos, toPos, partOfSpeech });
   });
   return sentenceTokens;
+}
+
+export function combineConjunctionConnectedNounGroups(sentenceTokens:SentenceToken[], nounGroups:TokenSpan[]):TokenSpan[] {
+  if (nounGroups.length < 2) return nounGroups;
+
+  const combinedNounGroups:TokenSpan[] = [];
+  let currentGroup = nounGroups[0];
+  for (let i = 1; i < nounGroups.length; ++i) {
+    const nextGroup = nounGroups[i];
+    
+    // Are the groups separated by just one token?
+    const gapCount = nextGroup.firstI - currentGroup.lastI - 1;
+    assert(gapCount >= 1, 'Expected noun groups to be non-overlapping and in order');
+    if (gapCount > 1) { // More than one token in between, so can't be conjunction-connected.
+      combinedNounGroups.push(currentGroup);
+      currentGroup = nextGroup;
+      continue;
+    }
+
+    // Check the gap token to see if it's a conjunction.
+    const gapToken = sentenceTokens[currentGroup.lastI + 1];
+    if (gapToken.partOfSpeech !== 'CCONJ') { // Not a conjunction, so can't be conjunction-connected.
+      combinedNounGroups.push(currentGroup);
+      currentGroup = nextGroup;
+      continue;
+    }
+
+    // It's a conjunction - extend the current group to include the next group.
+    currentGroup = { firstI: currentGroup.firstI, lastI: nextGroup.lastI };
+  }
+  combinedNounGroups.push(currentGroup); // Add the last group.
+
+  return combinedNounGroups;
 }

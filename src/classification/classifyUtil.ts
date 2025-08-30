@@ -7,6 +7,7 @@ import MeaningClassifications from "@/impexp/types/MeaningClassifications";
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from "@/impexp/types/MeaningIndex";
 import { replaceNumbers } from "./replaceNumbers";
 import { replaceItems } from "./replaceItems";
+import { prompt } from "@/llm/llmUtil";
 
 async function _makeReplacements(utterance:string):Promise<string> {
   // This logic is coupled to Bintopia. Think about generalizing it later.
@@ -25,8 +26,15 @@ function _findChildMeaningIds(meaningId:string, meaningIndex:MeaningIndex):strin
   return meaning ? meaning.childMeaningIds : [];
 }
 
-async function _evaluateMeaningMatch(_utterance:string, _meaning:Meaning):Promise<string> {
-  return 'N'; // TODO.
+async function _evaluateMeaningMatch(utterance:string, meaning:Meaning):Promise<string> {
+  const SYSTEM_MESSAGE = `User will say a phrase. ` +
+    `Output a single letter "Y" for yes, "N" for no, or "M" for maybe ` + 
+    `based on your certainty that the user's phrase matches the following rule: ${meaning.promptInstructions}\n` +
+    `Do not output more or less than a single letter.`;
+  const response = await prompt(utterance, SYSTEM_MESSAGE, meaning.nShotPairs, 2);
+  const singleChar = response.trim().toUpperCase().substring(0, 1);
+  if (['Y', 'N', 'M'].includes(singleChar)) return singleChar;
+  return 'M';
 }
 
 async function _findBestMeaningMatch(_utterance:string, _meaningIndex:MeaningIndex, _meaningIds:string[]) {
@@ -70,7 +78,7 @@ export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promi
   return classifications;
 }
 
-export async function createMeaningClassfication(corpusFilepath:string, meaningIndexFilepath:string, classificationFilepath:string) {
+export async function createMeaningClassification(corpusFilepath:string, meaningIndexFilepath:string, classificationFilepath:string) {
   const corpus = await importCorpus(corpusFilepath);
   const meaningIndex = await importMeaningIndex(meaningIndexFilepath);
   const classifications = await classify(corpus, meaningIndex);

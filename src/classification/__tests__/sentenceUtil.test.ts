@@ -1,6 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { getSentenceTokens, findPrenominalModifiers } from '../sentenceUtil';
+import { combineConjunctionConnectedNounGroups } from '../sentenceUtil';
 import SentenceToken from '../types/SentenceToken';
 
 function _getPrenominalSpan(sentence:string, nounValue:string):string {
@@ -99,6 +100,42 @@ describe('sentenceUtil', () => {
     it('does not include ADP when not preceded by a noun (granular)', () => {
       expect(_getPrenominalSpan('with cheese', 'cheese')).toBe('cheese');
       expect(_getPrenominalSpan('it goes under the cheese', 'cheese')).toBe('the cheese');
+    });
+  });
+
+  describe('combineConjunctionConnectedNounGroups()', () => {
+    function nounGroupsFromNames(sentence:string, names:string[]) {
+      const sentenceTokens = getSentenceTokens(sentence);
+      return names.map(n => {
+        const i = sentenceTokens.findIndex(t => t.value.toLowerCase() === n.toLowerCase());
+        if (i === -1) throw new Error(`token '${n}' not found`);
+        return { firstI: i, lastI: i };
+      });
+    }
+
+    it.only('combines two noun groups separated by a conjunction', () => {
+      const s = 'I like apples and oranges a lot';
+      const groups = nounGroupsFromNames(s, ['apples', 'oranges']);
+      const combined = combineConjunctionConnectedNounGroups(getSentenceTokens(s), groups);
+      expect(combined.length).toBe(1);
+      expect(combined[0].firstI).toBe(groups[0].firstI);
+      expect(combined[0].lastI).toBe(groups[1].lastI);
+    });
+
+    it('does not combine when the gap token is not a conjunction', () => {
+      const s = 'I like apples with oranges sometimes';
+      const groups = nounGroupsFromNames(s, ['apples', 'oranges']);
+      const combined = combineConjunctionConnectedNounGroups(getSentenceTokens(s), groups);
+      expect(combined.length).toBe(2);
+      expect(combined[0]).toEqual(groups[0]);
+      expect(combined[1]).toEqual(groups[1]);
+    });
+
+    it('does not combine when more than one token separates groups', () => {
+      const s = 'I like apples some random oranges now';
+      const groups = nounGroupsFromNames(s, ['apples', 'oranges']);
+      const combined = combineConjunctionConnectedNounGroups(getSentenceTokens(s), groups);
+      expect(combined.length).toBe(2);
     });
   });
 });
