@@ -20,6 +20,7 @@ cache/transformers/*
 cache/*.json
 cache/*.txt
 cache/*.md
+cache/.llm*
 datasets/*
 
 # Editor directories and files

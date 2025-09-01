@@ -10,6 +10,7 @@ import { replaceItems } from "./replaceItems";
 import { prompt } from "@/llm/llmUtil";
 import NShotPair from "@/llm/types/NShotPair";
 import { isDigitChar } from "@/common/regExUtil";
+import { isUtteranceNormalized } from "./utteranceUtil";
 
 async function _makeReplacements(utterance:string):Promise<string> {
   // This logic is coupled to Bintopia. Think about generalizing it later.
@@ -51,13 +52,15 @@ function _parseNumberFromResponse(response:string):number {
 }
 
 function _concatCandidateMeanings(meaningIds:string[], meaningIndex:MeaningIndex):string {
-  return meaningIds.map((id, i) => `${i} ${meaningIndex[id].promptInstructions}`).join('\n');
+  return meaningIds.map((id, i) => `${i+1} ${meaningIndex[id].promptInstructions}`).join('\n');
 }
 
-function _doesAnotherMeaningHaveSameNShotPair(meaningIndex:MeaningIndex, meaningId:string, nShotPair:NShotPair):boolean {
+function _doesAnotherSiblingMeaningHaveSameNShotPair(meaningIndex:MeaningIndex, meaningId:string, nShotPair:NShotPair):boolean {
+  const parentMeaningId = meaningIndex[meaningId].parentMeaningId;
   return Object.keys(meaningIndex).some(compareMeaningId => {
     if (compareMeaningId === meaningId) return false;
     const compareMeaning = meaningIndex[compareMeaningId];
+    if (compareMeaning.parentMeaningId !== parentMeaningId) return false;
     for(let i = 0; i < compareMeaning.nShotPairs.length; ++i) {
       const comparePair:NShotPair = compareMeaning.nShotPairs[i];
       if (comparePair.userMessage === nShotPair.userMessage && comparePair.assistantResponse === nShotPair.assistantResponse) return true;
@@ -87,34 +90,33 @@ function _combineMeaningNShotPairs(meaningIndex:MeaningIndex, meaningIds:string[
     if (parentMeaningId === null) {
       parentMeaningId = meaning.parentMeaningId;
     } else {
-      assert(parentMeaningId === meaning.parentMeaningId, `All meanings passed should have same parent ID.`);
+      if (parentMeaningId !== meaning.parentMeaningId) throw Error(`Expected all meanings passed to have same parent meaning ID of "${parentMeaningId}".`);
     }
     for (let j = 0; j < meaning.nShotPairs.length; ++j) {
       const pair = meaning.nShotPairs[j];
       if (pair.assistantResponse !== 'Y') continue;
-      const hasYesDuplicate = _doesAnotherMeaningHaveSameNShotPair(meaningIndex, meaningId, pair);
+      const hasYesDuplicate = _doesAnotherSiblingMeaningHaveSameNShotPair(meaningIndex, meaningId, pair);
       if (hasYesDuplicate) {
-        console.warn(`The same "Y" n-shot pair is used in 2 or more children of meaning ID ${meaning.parentMeaningId}. You should treat these "Y" examples at mutually exclusive for better classification.`);
+        console.warn(`A "Y" n-shot pair for #${meaningId}, userMessage "${pair.userMessage}" is also used by a different child of #${meaning.parentMeaningId}. You should treat these "Y" examples at mutually exclusive for better classification.`);
         continue;
       }
-      _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:`${i}`}, combined);
+      _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:`${i+1}`}, combined);
     }
   }
   
   // If parent meaning ID is "0", add all "Y" pairs from UNCLASSIFIED_MEANING_ID.
   assertNonNullable(parentMeaningId);
   const parentMeaning = meaningIndex[parentMeaningId];
-  // assertNonNullable(parentMeaning); TODO - need update to import format. But then this code will work.
-  if (parentMeaningId !== UNCLASSIFIED_MEANING_ID && parentMeaning) { // TODO - remove && parentMeaning
+  if (parentMeaningId === UNCLASSIFIED_MEANING_ID && parentMeaning) {
     parentMeaning.nShotPairs.forEach(pair => {
       if (pair.assistantResponse === 'Y') {
-        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:UNCLASSIFIED_MEANING_ID}, combined);
+        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:'0'}, combined);
       }
     });
   } else { // Add all "N" pairs from parent meaning with UNCLASSIFIED_MEANING_ID as response.
     parentMeaning.nShotPairs.forEach(pair => {
       if (pair.assistantResponse === 'N') {
-        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:UNCLASSIFIED_MEANING_ID}, combined);
+        _addNShotPairIfUserMessageUnique({userMessage:pair.userMessage, assistantResponse:'0'}, combined);
       }
     });
   }
@@ -130,8 +132,8 @@ async function _findBestMeaningMatch(utterance:string, meaningIndex:MeaningIndex
     `If none of the meanings are a good match, output "0". Do not output anything besides a single number.`;
   const nShotPairs:NShotPair[] = _combineMeaningNShotPairs(meaningIndex, meaningIds);
   const response = await prompt(utterance, SYSTEM_MESSAGE, nShotPairs, 8);
-  const meaningI = _parseNumberFromResponse(response);
-  if (meaningI === 0 || meaningI < 0 || meaningI >= meaningIds.length) return UNCLASSIFIED_MEANING_ID
+  const meaningI = _parseNumberFromResponse(response) - 1;
+  if (meaningI < 0 || meaningI >= meaningIds.length) return UNCLASSIFIED_MEANING_ID
   return meaningIds[meaningI];
 }
 
@@ -141,31 +143,40 @@ function _findMeaningIdsShortList(meaningIds:string[], evals:string[]):string[] 
   return [];
 }
 
-async function _classifyUtterance(utterance:string, meaningIndex:MeaningIndex, parentMeaningId:string = UNCLASSIFIED_MEANING_ID):Promise<string> {
+export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex, parentMeaningId:string = UNCLASSIFIED_MEANING_ID):Promise<string> {
+  console.log(`Classifying utterance "${utterance}" under parent meaning ID ${parentMeaningId}.`);
   let evalMeaningIds:string[] = _findChildMeaningIds(parentMeaningId, meaningIndex);
   if (!evalMeaningIds.length) return parentMeaningId;
 
+  assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
+
+  console.log(`Evaluating ${evalMeaningIds.length} child meanings.`);
   const evals:string[] = [];
-  evalMeaningIds.forEach(async (meaningId:string) => {
+  for(let i = 0; i < evalMeaningIds.length; ++i) { // Don't promise.all() because inference won't handle it well, and I prefer a deterministic order for tests.
+    const meaningId = evalMeaningIds[i];
     const meaning = meaningIndex[meaningId];
     assertNonNullable(meaning);
     const meaningEval = await _evaluateMeaningMatch(utterance, meaning);
+    console.log(`Meaning ID ${meaningId} evaluated to ${meaningEval}.`);
     evals.push(meaningEval);
-  });
+  };
 
   evalMeaningIds = _findMeaningIdsShortList(evalMeaningIds, evals);
-  if (!evalMeaningIds.length) return parentMeaningId;
-  if (evalMeaningIds.length === 1) return await _classifyUtterance(utterance, meaningIndex, evalMeaningIds[0]);
+  if (!evalMeaningIds.length) { console.log(`All child meanings rejected - returning parent meaning ID ${parentMeaningId}.`); return parentMeaningId; }
+  if (evalMeaningIds.length === 1) { console.log(`Only one child meaning candidate - ${evalMeaningIds[0]}`); return await classifyUtterance(utterance, meaningIndex, evalMeaningIds[0]); }
 
+  console.log(`Directly comparing the following ${evalMeaningIds.length} candidate meanings: ${evalMeaningIds.join(', ')}.`);
   const bestMeaningId = await _findBestMeaningMatch(utterance, meaningIndex, evalMeaningIds);
-  return await _classifyUtterance(utterance, meaningIndex, bestMeaningId);
+  console.log(`Best meaning ID is ${bestMeaningId}.`);
+  return await classifyUtterance(utterance, meaningIndex, bestMeaningId);
 }
 
 export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promise<MeaningClassifications> {
   const classifications:MeaningClassifications = {};
   corpus.forEach(async (utterance:string) => {
+    assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
     utterance = await _makeReplacements(utterance);
-    const meaningId = await _classifyUtterance(utterance, meaningIndex);
+    const meaningId = await classifyUtterance(utterance, meaningIndex);
     if (!classifications[meaningId]) classifications[meaningId] = [];
     classifications[meaningId].push(utterance);
   });
@@ -181,5 +192,7 @@ export async function createMeaningClassification(corpusFilepath:string, meaning
 
 export const TestExports = {
   _evaluateMeaningMatch,
-  _concatCandidateMeanings
+  _concatCandidateMeanings,
+  _combineMeaningNShotPairs,
+  _findMeaningIdsShortList
 }

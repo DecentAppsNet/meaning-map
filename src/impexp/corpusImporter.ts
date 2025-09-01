@@ -1,15 +1,14 @@
+import { normalizeUtterance } from "@/classification/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
 
-// Normalize line by converting to lower case, trimming whitespace at beginning/end of line, and converting
-// any whitespace between words in the line to a single space.
-function _normalizeLine(line:string):string {
-  return line.toLowerCase().trim().replace(/\s+/g, ' ');
+function _normalizeUtterance(utterance:string):string {
+  return normalizeUtterance(utterance.toLowerCase()); // Corpus shouldn't include ALLCAPS variables. These may be added later.
 }
 
 // Normalize each line, dedupe against other normalized lines, and return as an array of strings, one per line.
 export function parseCorpus(text:string):string[] {
   const seen = new Set<string>();
-  return text.split("\n").map(_normalizeLine).filter(line => {
+  return text.split("\n").map(_normalizeUtterance).filter(line => {
     if (line.length > 0 && !seen.has(line)) {
       seen.add(line);
       return true;
