@@ -9,9 +9,16 @@ function _getPreviousTokenPartOfSpeech(sentenceTokens:SentenceToken[], index:num
   return index > 0 ? sentenceTokens[index - 1].partOfSpeech : '';
 }
 
+function _getNextTokenPartOfSpeech(sentenceTokens:SentenceToken[], index:number):string {
+  return index < sentenceTokens.length - 1 ? sentenceTokens[index + 1].partOfSpeech : '';
+}
+
 function _isGerund(sentenceTokens:SentenceToken[], index:number):boolean {
   const token = sentenceTokens[index];
-  if (_getPreviousTokenPartOfSpeech(sentenceTokens, index) === 'AUX') return false; // e.g., "is running"
+  const prevPartOfSpeech = _getPreviousTokenPartOfSpeech(sentenceTokens, index);
+  if (prevPartOfSpeech === 'AUX' || prevPartOfSpeech === 'PROPN') return false; // e.g., "is running", "i'm running"
+  const nextPartOfSpeech = _getNextTokenPartOfSpeech(sentenceTokens, index);
+  if (nextPartOfSpeech !== 'NOUN' && nextPartOfSpeech !== 'PROPN') return false; // e,g, "running fast", "running the show"
   return token.partOfSpeech === 'VERB' && token.value.endsWith('ing');
 }
 

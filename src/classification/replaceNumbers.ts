@@ -1,4 +1,5 @@
 import { assert } from '../common/assertUtil';
+import { isUtteranceNormalized } from './utteranceUtil';
 
 const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy',
@@ -13,7 +14,7 @@ const connectingWords = ['and', 'a', 'uh', 'um', 'or', 'then'];
 // Only supporting positive integers between zero and a trillion. This is a loose check that doesn't care about the grammar of numbers or parsing a value, 
 // e.g. "two forty" will be considered a number. Lists of multiple numbers will end up being recognized as a single number.
 export function replaceNumbers(text:string):string {
-  assert(text.toLowerCase().trim() === text); // Should already be normalized.
+  assert(isUtteranceNormalized(text), 'Expected normalized text');
   const words = text.split(' ');
   const outWords:string[] = [];
   let wasInNumber = false;

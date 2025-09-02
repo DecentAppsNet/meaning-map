@@ -1,12 +1,8 @@
-import { describe, it, beforeAll, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import { replaceItems } from "../replaceItems";
-import { initTransformersEmbedder } from '@/embeddings/transformersEmbedder';
 
 describe('replaceItems', () => {
-  beforeAll(async () => {
-    await initTransformersEmbedder();
-  });
 
   describe('replaceItems()', () => {
     it('replaces nothing for empty text', async () => {

@@ -23,6 +23,10 @@ cache/*.md
 cache/.llm*
 datasets/*
 
+# Environment vars
+.env
+.enc-env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

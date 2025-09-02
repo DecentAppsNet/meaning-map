@@ -16,7 +16,8 @@ vi.mock('../promptCache', async () => {
   return {
     getRequestHash: actual.getRequestHash,
     getCachedResponse: vi.fn(async (_h:string) => theCachedResponse),
-    upsertCachedResponse: vi.fn(async (_h:string, _r:string) => { /* noop */ })
+    upsertCachedResponse: vi.fn(async (_h:string, _r:string) => { /* noop */ }),
+    setModel: vi.fn((_modelName:string) => { /* noop */ })
   };
 });
 

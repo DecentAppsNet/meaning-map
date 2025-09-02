@@ -38,6 +38,11 @@ describe('spanUtil', () => {
       expect(combineAdjacentAndOverlappingTokenSpans(spans)).toEqual([{firstI:2, lastI:5}]);
     });
 
+    it('returns a single token span for a smaller token span that starts at 0 inside of another larger span also starting at 0', () => {
+      const spans = [{firstI:0, lastI:4}, {firstI:0, lastI:5}];
+      expect(combineAdjacentAndOverlappingTokenSpans(spans)).toEqual([{firstI:0, lastI:5}]);
+    });
+
     it('returns a single token span for a smaller token span that ends at the end of another', () => {
       const spans = [{firstI:2, lastI:5}, {firstI:3, lastI:5}];
       expect(combineAdjacentAndOverlappingTokenSpans(spans)).toEqual([{firstI:2, lastI:5}]);

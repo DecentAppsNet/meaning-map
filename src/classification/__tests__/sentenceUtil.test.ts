@@ -113,7 +113,7 @@ describe('sentenceUtil', () => {
       });
     }
 
-    it.only('combines two noun groups separated by a conjunction', () => {
+    it('combines two noun groups separated by a conjunction', () => {
       const s = 'I like apples and oranges a lot';
       const groups = nounGroupsFromNames(s, ['apples', 'oranges']);
       const combined = combineConjunctionConnectedNounGroups(getSentenceTokens(s), groups);

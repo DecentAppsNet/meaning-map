@@ -11,6 +11,7 @@ import { prompt } from "@/llm/llmUtil";
 import NShotPair from "@/llm/types/NShotPair";
 import { isDigitChar } from "@/common/regExUtil";
 import { isUtteranceNormalized } from "./utteranceUtil";
+import { endSection, log, startSection } from "@/common/describeLog";
 
 async function _makeReplacements(utterance:string):Promise<string> {
   // This logic is coupled to Bintopia. Think about generalizing it later.
@@ -143,43 +144,73 @@ function _findMeaningIdsShortList(meaningIds:string[], evals:string[]):string[] 
   return [];
 }
 
-export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex, parentMeaningId:string = UNCLASSIFIED_MEANING_ID):Promise<string> {
-  console.log(`Classifying utterance "${utterance}" under parent meaning ID ${parentMeaningId}.`);
+function _describeMeaning(meaning:Meaning):string {
+  return `#${meaning.meaningId} (${meaning.description})`;
+}
+
+function _describeMeaningId(meaningIndex:MeaningIndex, meaningId:string):string {
+  if (meaningId === UNCLASSIFIED_MEANING_ID) return `#${UNCLASSIFIED_MEANING_ID} (unclassified)`;
+  const meaning = meaningIndex[meaningId];
+  if (!meaning) return `#${meaningId} (unknown)`;
+  return _describeMeaning(meaning);
+}
+
+async function _classifyUtteranceRecursively(utterance:string, meaningIndex:MeaningIndex, parentMeaningId:string = UNCLASSIFIED_MEANING_ID):Promise<string> {
   let evalMeaningIds:string[] = _findChildMeaningIds(parentMeaningId, meaningIndex);
-  if (!evalMeaningIds.length) return parentMeaningId;
+  if (!evalMeaningIds.length) { log(`Classified utterance as ${_describeMeaningId(meaningIndex, parentMeaningId)}.`); return parentMeaningId; }
 
-  assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
+  startSection(`Classifying under parent ${_describeMeaningId(meaningIndex, parentMeaningId)}.`);
+  try {
+    assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
 
-  console.log(`Evaluating ${evalMeaningIds.length} child meanings.`);
-  const evals:string[] = [];
-  for(let i = 0; i < evalMeaningIds.length; ++i) { // Don't promise.all() because inference won't handle it well, and I prefer a deterministic order for tests.
-    const meaningId = evalMeaningIds[i];
-    const meaning = meaningIndex[meaningId];
-    assertNonNullable(meaning);
-    const meaningEval = await _evaluateMeaningMatch(utterance, meaning);
-    console.log(`Meaning ID ${meaningId} evaluated to ${meaningEval}.`);
-    evals.push(meaningEval);
-  };
+    startSection(`Evaluating ${evalMeaningIds.length} child meanings.`);
+      const evals:string[] = [];
+      for(let i = 0; i < evalMeaningIds.length; ++i) { // Don't promise.all() because LLM inference won't handle it well, and I prefer a deterministic order for tests.
+        const meaningId = evalMeaningIds[i];
+        const meaning = meaningIndex[meaningId];
+        assertNonNullable(meaning);
+        const meaningEval = await _evaluateMeaningMatch(utterance, meaning);
+        log(`${_describeMeaningId(meaningIndex, meaningId)} evaluated to ${meaningEval}.`);
+        evals.push(meaningEval);
+      };
+    endSection();
 
-  evalMeaningIds = _findMeaningIdsShortList(evalMeaningIds, evals);
-  if (!evalMeaningIds.length) { console.log(`All child meanings rejected - returning parent meaning ID ${parentMeaningId}.`); return parentMeaningId; }
-  if (evalMeaningIds.length === 1) { console.log(`Only one child meaning candidate - ${evalMeaningIds[0]}`); return await classifyUtterance(utterance, meaningIndex, evalMeaningIds[0]); }
+    evalMeaningIds = _findMeaningIdsShortList(evalMeaningIds, evals);
+    if (!evalMeaningIds.length) { log(`All child meanings rejected - returning parent ${_describeMeaningId(meaningIndex, parentMeaningId)}.`); return parentMeaningId; }
+    if (evalMeaningIds.length === 1) { log(`Only one child meaning candidate - ${evalMeaningIds[0]}`); return await _classifyUtteranceRecursively(utterance, meaningIndex, evalMeaningIds[0]); }
 
-  console.log(`Directly comparing the following ${evalMeaningIds.length} candidate meanings: ${evalMeaningIds.join(', ')}.`);
-  const bestMeaningId = await _findBestMeaningMatch(utterance, meaningIndex, evalMeaningIds);
-  console.log(`Best meaning ID is ${bestMeaningId}.`);
-  return await classifyUtterance(utterance, meaningIndex, bestMeaningId);
+    startSection(`Directly comparing the following ${evalMeaningIds.length} candidate meanings: ${evalMeaningIds.join(', ')}.`);
+      const bestMeaningId = await _findBestMeaningMatch(utterance, meaningIndex, evalMeaningIds);
+      log(`Best meaning is ${_describeMeaningId(meaningIndex, bestMeaningId)}.`);
+    endSection();
+    
+    return await _classifyUtteranceRecursively(utterance, meaningIndex, bestMeaningId);
+  } finally {
+    endSection();
+  }
+}
+
+export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex):Promise<string> {
+  const replacedUtterance = await _makeReplacements(utterance);
+  if (replacedUtterance !== utterance) {
+    log(`*** utterance: "${replacedUtterance}" from original "${utterance}"`);
+  } else {
+    log(`*** utterance: "${replacedUtterance}"`);
+  }
+  return await _classifyUtteranceRecursively(replacedUtterance, meaningIndex, UNCLASSIFIED_MEANING_ID);  
 }
 
 export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promise<MeaningClassifications> {
   const classifications:MeaningClassifications = {};
-  corpus.forEach(async (utterance:string) => {
-    assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
-    utterance = await _makeReplacements(utterance);
-    const meaningId = await classifyUtterance(utterance, meaningIndex);
-    if (!classifications[meaningId]) classifications[meaningId] = [];
-    classifications[meaningId].push(utterance);
-  });
+  startSection(`Classifying corpus - ${corpus.length} utterances`);
+    for(let i = 0; i < corpus.length; ++i) {
+      const utterance = corpus[i];
+      assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
+      const meaningId = await classifyUtterance(utterance, meaningIndex);
+      if (!classifications[meaningId]) classifications[meaningId] = [];
+      classifications[meaningId].push(utterance);
+    }
+  endSection();
   return classifications;
 }
 
@@ -194,5 +225,6 @@ export const TestExports = {
   _evaluateMeaningMatch,
   _concatCandidateMeanings,
   _combineMeaningNShotPairs,
-  _findMeaningIdsShortList
+  _findMeaningIdsShortList,
+  _makeReplacements
 }

@@ -11,12 +11,13 @@ vi.mock("../../common/fileUtil", async () => ({
 }));
 
 // Imports after mocks.
-import { getRequestHash, getCachedResponse, upsertCachedResponse, clearCache } from '../promptCache';
+import { getRequestHash, getCachedResponse, upsertCachedResponse, clearCache, setModel } from '../promptCache';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('promptCache', () => {
   beforeEach(async () => {
     theCache = {};
+    setModel('test-model');
     await clearCache();
   });
 

@@ -1,25 +1,29 @@
 import NShotPair from "./types/NShotPair";
 import LlmMessage from './types/LlmMessage';
 import { fetchJsonWithAuth } from '../common/httpUtil';
-import { getRequestHash, getCachedResponse, upsertCachedResponse } from './promptCache';
+import { getRequestHash, getCachedResponse, upsertCachedResponse, setModel as setPromptCacheModel } from './promptCache';
 
 // Defaults (can be overridden via environment variables)
 const DEFAULT_STREAM = false;
 const DEFAULT_TEMPERATURE = 0;
+/* v8 ignore start */
 const DEFAULT_OPENAI_URL = process.env.OPENAI_API_BASE ?? 'http://localhost:11434/v1/chat/completions';
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? 'llama3';
+/* v8 ignore end */
 
 /**
  * Send a prompt to OpenAI Chat Completions using only Node built-ins.
  * Messages are assembled as: [system, n-shot (user, assistant)*, promptMessage]
  *
  * Environment variables used:
- * - OPENAI_API_KEY: required, your OpenAI API key
- * - OPENAI_API_BASE: optional, override base URL (defaults to official API)
- * - OPENAI_MODEL: optional, overrides the model (defaults to gpt-3.5-turbo)
+ * - OPENAI_API_KEY: optional, your OpenAI API key
+ * - OPENAI_API_BASE: optional, override base URL (defaults to Ollama)
+ * - OPENAI_MODEL: optional, overrides the model (defaults to llama3)
  */
 export async function prompt(promptMessage:string, systemMessage:string = 'Respond concisely and accurately.', nShotPairs:NShotPair[] = [], maxTokens:number = 500):Promise<string> {
 	const apiKey = process.env.OPENAI_API_KEY || 'FAKE';
+
+	setPromptCacheModel(DEFAULT_MODEL);
 
 	// Assemble messages: system, then n-shot pairs, then the user's prompt
 	const messages: LlmMessage[] = [];
