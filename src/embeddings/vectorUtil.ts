@@ -63,6 +63,7 @@ export function subtractUnitVectors(vectorA:UnitVector, vectorB:UnitVector):Unit
   return out as UnitVector;
 }
 
+// Returns a centroid unit vector representing the average direction of the input vectors.
 export function averageUnitVectors(vectors:UnitVector[]):UnitVector {
   assert(vectors.length > 0, 'No vectors to average');
   const length = vectors[0].length;

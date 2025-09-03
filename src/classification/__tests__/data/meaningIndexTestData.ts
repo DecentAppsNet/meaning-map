@@ -43,7 +43,7 @@ export const exampleMeaningIndex:MeaningIndex = {
     meaningId: "1.1",
     description: "Adding only",
     params: [],
-    promptInstructions: "User declares or implies they are adding things to a container. They do not specify a NUMBER that would identify a container. They do not specify ITEMS to add to a container.",
+    promptInstructions: `User doesn't specify the "NUMBER" keyword or, if specified, it isn't used as a destination for adding. User doesn't specify the "ITEMS" keyword.`,
     nShotPairs: [
       { userMessage: "add ITEMS", assistantResponse: "N" },
       { userMessage: "add ITEMS to NUMBER", assistantResponse: "N" },
@@ -61,7 +61,7 @@ export const exampleMeaningIndex:MeaningIndex = {
     meaningId: "1.2",
     description: "Adding ITEMS",
     params: ["ITEMS"],
-    promptInstructions: "User specifies ITEMS to add to a container. They do not specify a NUMBER that would identify a container.",
+    promptInstructions: `User specifies "ITEMS" keyword to represent items to add to a container. User doesn't specify the "NUMBER" keyword or, if specified, it isn't used as a destination for adding.`,
     nShotPairs: [
       { userMessage: "add ITEMS", assistantResponse: "Y" },
       { userMessage: "add ITEMS to NUMBER", assistantResponse: "N" },
@@ -78,7 +78,7 @@ export const exampleMeaningIndex:MeaningIndex = {
     meaningId: "1.3",
     description: "Adding to NUMBER",
     params: ["NUMBER"],
-    promptInstructions: "User specifies or implies they are adding something to a container. They specifiy a NUMBER that would identify a container. They do not specify ITEMS that they are adding.",
+    promptInstructions: `User specifies "NUMBER" keyword to represent a destination for adding items. User doesn't specify the "ITEMS" keyword.`,
     nShotPairs: [
       { userMessage: "add ITEMS", assistantResponse: "N" },
       { userMessage: "add ITEMS to NUMBER", assistantResponse: "N" },

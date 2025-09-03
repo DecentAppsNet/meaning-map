@@ -48,7 +48,13 @@ function _isPrecededByNumeral(sentenceTokens:SentenceToken[], index:number):bool
   return _getPreviousTokenPartOfSpeech(sentenceTokens, index) === 'NUM';
 }
 
+// This can be much more complex. Consider "I put a cat in a basket" versus "I have a cat in a basket". I'm
+// simplifying by only allowing a few prepositions that commonly modify nouns. But these will exclude some valid cases
+// like "my bag for marbles". If you want to refine, look at the function isPlacementVerb() in verbUtil.ts, which was
+// close to working well. It could be used to check the verb preceding the first noun group.
+const MODIFYING_PREPOSITIONS = ['of', 'with', 'without'];
 function _isConnectingPreposition(sentenceTokens:SentenceToken[], index:number):boolean {
+  if (!MODIFYING_PREPOSITIONS.includes(sentenceTokens[index].value.toLowerCase())) return false;
   const previousTokenPartOfSpeech = _getPreviousTokenPartOfSpeech(sentenceTokens, index);
   return ['NOUN', 'PROPN'].includes(previousTokenPartOfSpeech);
 }

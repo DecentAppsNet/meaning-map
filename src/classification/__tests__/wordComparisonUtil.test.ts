@@ -1,11 +1,11 @@
 import { describe, expect, it, beforeEach, beforeAll } from 'vitest';
 
 import { compareNouns, createNounMatchCriteria, doesNounMatchCriteria } from "../wordComparisonUtil";
-import { initTransformersEmbedder, clearEmbeddingCache } from '@/embeddings/transformersEmbedder';
+import { initEmbedder, clearEmbeddingCache } from '@/embeddings/transformersEmbedder';
 
 describe('wordComparisonUtil', () => {
   beforeAll(async () => {
-    await initTransformersEmbedder();
+    await initEmbedder();
   });
 
   beforeEach(() => {

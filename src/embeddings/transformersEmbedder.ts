@@ -28,7 +28,7 @@ function toArray(output: unknown): number[] {
   throw new Error('Unexpected embedding output shape');
 }
 
-export async function initTransformersEmbedder(): Promise<void> {
+export async function initEmbedder(): Promise<void> {
   if (initialized && extractor) return; // already ready
   // Force Node-friendly settings and local cache.
   const e: any = env as any;
@@ -41,7 +41,7 @@ export async function initTransformersEmbedder(): Promise<void> {
   initialized = extractor !== null;
 }
 
-export function isInitialized(): boolean {
+export function isEmbedderInitialized(): boolean {
   return initialized;
 }
 
@@ -50,7 +50,7 @@ export function clearEmbeddingCache(): void {
 }
 
 export async function embedSentence(sentence:string):Promise<UnitVector> {
-  if (!initialized) await initTransformersEmbedder();
+  if (!initialized) await initEmbedder();
   const key = sentence.trim().toLowerCase();
   const cached = vectorCache.get(key);
   if (cached) return cached;

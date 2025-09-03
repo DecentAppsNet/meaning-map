@@ -190,13 +190,17 @@ async function _classifyUtteranceRecursively(utterance:string, meaningIndex:Mean
   }
 }
 
+function _logUtterance(utterance:string, original:string):void {
+  if (utterance !== original) {
+    log(`*** utterance: "${utterance}" from original "${original}"`);
+  } else {
+    log(`*** utterance: "${utterance}"`);
+  }
+}
+
 export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex):Promise<string> {
   const replacedUtterance = await _makeReplacements(utterance);
-  if (replacedUtterance !== utterance) {
-    log(`*** utterance: "${replacedUtterance}" from original "${utterance}"`);
-  } else {
-    log(`*** utterance: "${replacedUtterance}"`);
-  }
+  _logUtterance(replacedUtterance, utterance);
   return await _classifyUtteranceRecursively(replacedUtterance, meaningIndex, UNCLASSIFIED_MEANING_ID);  
 }
 
@@ -204,11 +208,12 @@ export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promi
   const classifications:MeaningClassifications = {};
   startSection(`Classifying corpus - ${corpus.length} utterances`);
     for(let i = 0; i < corpus.length; ++i) {
-      const utterance = corpus[i];
-      assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
-      const meaningId = await classifyUtterance(utterance, meaningIndex);
+      assert(isUtteranceNormalized(corpus[i]), `Utterance not normalized: "${corpus[i]}"`);
+      const utterance = await _makeReplacements(corpus[i]);
+      _logUtterance(utterance, corpus[i]);
+      const meaningId = await _classifyUtteranceRecursively(utterance, meaningIndex);
       if (!classifications[meaningId]) classifications[meaningId] = [];
-      classifications[meaningId].push(utterance);
+      if (!classifications[meaningId].includes(utterance)) classifications[meaningId].push(utterance); // Note that replacing items/numbers can cause duplicates even if corpus doesn't have duplicates.
     }
   endSection();
   return classifications;

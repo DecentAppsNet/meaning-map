@@ -1,4 +1,4 @@
-import { embedSentence, isInitialized } from "@/embeddings/transformersEmbedder";
+import { embedSentence, isEmbedderInitialized } from "@/embeddings/transformersEmbedder";
 import UnitVector from "@/embeddings/types/UnitVector";
 import { averageUnitVectors, compareUnitVectors, removeProjectionFromUnitVector } from '@/embeddings/vectorUtil';
 import VectorMatchCriteria from "./types/VectorMatchCriteria";
@@ -36,7 +36,7 @@ async function _embedNoun(noun:string):Promise<UnitVector> {
 }
 
 export async function compareNouns(nounA:string, nounB:string):Promise<number> {
-  if (!isInitialized()) throw new Error('Transformers embedder not initialized.');
+  if (!isEmbedderInitialized()) throw new Error('Transformers embedder not initialized.');
 
   const a = await _embedNoun(nounA);
   const b = await _embedNoun(nounB);

@@ -41,4 +41,30 @@ describe('replaceNumbers', () => {
     const input = 'we bought one hundred and twenty five apples and thirty oranges';
     expect(replaceNumbers(input)).toBe('we bought NUMBER apples and NUMBER2 oranges');
   });
+
+  it('recognizes number prefixes like "number five" and collapses into a single NUMBER', () => {
+    const input = 'please give me number five and six';
+    // The prefix 'number' causes the following number words to be recognized; lists are collapsed into a single NUMBER
+    expect(replaceNumbers(input)).toBe('please give me NUMBER');
+  });
+
+  it('recognizes short prefix "num" before a number word', () => {
+    const input = 'put this in num twelve';
+    expect(replaceNumbers(input)).toBe('put this in NUMBER');
+  });
+
+  it('recognizes "#" as a prefix before a number word', () => {
+    const input = 'label # three items';
+    expect(replaceNumbers(input)).toBe('label NUMBER items');
+  });
+
+  it('does not treat a trailing prefix word alone as a number', () => {
+    const input = 'please say number';
+    expect(replaceNumbers(input)).toBe('please say number');
+  });
+
+  it('does not treat a prefix word followed by a non-number word as a number', () => {
+    const input = 'please say number apple';
+    expect(replaceNumbers(input)).toBe('please say number apple');
+  });
 });

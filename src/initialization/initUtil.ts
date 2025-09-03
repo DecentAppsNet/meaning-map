@@ -1,10 +1,10 @@
 /* v8 ignore start */
-import { initTransformersEmbedder } from "@/embeddings/transformersEmbedder";
-import { initTransformersClassify } from "@/classification/transformersClassify";
+import { initEmbedder } from "@/embeddings/transformersEmbedder";
+import { initClassifier } from "@/classification/transformersClassify";
 
 export async function initialize() {
-  await initTransformersEmbedder();
-  await initTransformersClassify();
+  await initEmbedder();
+  await initClassifier();
 }
 
 /* v8 ignore end */

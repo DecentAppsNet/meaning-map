@@ -10,7 +10,7 @@ let initialized = false;
 type Classifier = (premise:string, hypotheses:string[], options:any) => Promise<any>;
 let classifier:Classifier|null = null;
 
-export async function initTransformersClassify():Promise<void> {
+export async function initClassifier():Promise<void> {
   if (initialized) return;
   const e: any = env as any;
   e.platform = 'node';
@@ -22,12 +22,12 @@ export async function initTransformersClassify():Promise<void> {
   initialized = classifier !== null;
 }
 
-export function isTransformersClassifyInitialized(): boolean {
+export function isClassifierInitialized(): boolean {
   return initialized;
 }
 
 export async function classify(premise:string, hypotheses:string[]) {
-  if (!initialized) await initTransformersClassify();
+  if (!initialized) await initClassifier();
   assertNonNullable(classifier);
   const res = await classifier(premise, hypotheses, { multi_label: false });
   return res;

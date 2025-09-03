@@ -34,6 +34,21 @@ describe('replaceItems', () => {
         expect(await replaceItems(`i have a power screwdriver`)).toEqual(`i have ITEMS`);
       });
     });
+
+
+    describe('when parsing sentences with multiple nouns', () => {
+      it('replaces two different nouns with ITEMS and ITEMS2', async () => {
+        expect(await replaceItems(`i have a screwdriver i have a sweater`)).toEqual(`i have ITEMS i have ITEMS2`);
+      });
+
+      it('replaces two nouns joined by a conjunction with ITEMS', async () => {
+        expect(await replaceItems(`i have a screwdriver and a hammer`)).toEqual(`i have ITEMS`);
+      });
+
+      it('replaces multiple nouns in a list with ITEMS', async () => {
+        expect(await replaceItems(`i have a screwdriver ruler and wrench`)).toEqual(`i have ITEMS`);
+      });
+    });
   
     describe('when parsing sentences with different kinds of physical items', () => {
       it('replaces a single clothing noun with ITEMS', async () => {
@@ -82,20 +97,6 @@ describe('replaceItems', () => {
 
       it('replaces a single gear noun with ITEMS', async () => {
         expect(await replaceItems(`i have hiking boots`)).toEqual(`i have ITEMS`);
-      });
-    });
-
-    describe('when parsing sentences with multiple nouns', () => {
-      it('replaces two different nouns with ITEMS and ITEMS2', async () => {
-        expect(await replaceItems(`i have a screwdriver i have a sweater`)).toEqual(`i have ITEMS i have ITEMS2`);
-      });
-
-      it('replaces two nouns joined by a conjunction with ITEMS', async () => {
-        expect(await replaceItems(`i have a screwdriver and a hammer`)).toEqual(`i have ITEMS`);
-      });
-
-      it('replaces multiple nouns in a list with ITEMS', async () => {
-        expect(await replaceItems(`i have a screwdriver ruler and wrench`)).toEqual(`i have ITEMS`);
       });
     });
 

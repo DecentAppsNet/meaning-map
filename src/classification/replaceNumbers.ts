@@ -4,12 +4,19 @@ import { isUtteranceNormalized } from './utteranceUtil';
 const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy',
 'eighty', 'ninety', 'hundred', 'thousand', 'million', 'billion', 'trillion'];
+const prefixWords = ['number', 'num', '#'];
 
 // Some words that could be between number words that should be ignored. These might
 // be the connecting words people intentionalyl use, ("one hundred and two"), 
 // interjection noises ("uh"), or mis-recognized words, e.g. speech recognition hears "or"
 // when user said "um".
 const connectingWords = ['and', 'a', 'uh', 'um', 'or', 'then'];
+
+function _isNumberPrefix(word:string, index:number, words:string[]):boolean {
+  if (!prefixWords.includes(word)) return false;
+  if (index === words.length - 1) return false;
+  return numberWords.includes(words[index + 1]);
+}
 
 // Only supporting positive integers between zero and a trillion. This is a loose check that doesn't care about the grammar of numbers or parsing a value, 
 // e.g. "two forty" will be considered a number. Lists of multiple numbers will end up being recognized as a single number.
@@ -21,7 +28,8 @@ export function replaceNumbers(text:string):string {
   let numberCount = 0;
   for (let i = 0; i < words.length; ++i) {
     const word = words[i];
-    const inNumber = numberWords.includes(word);
+    let inNumber = numberWords.includes(word);
+    if (_isNumberPrefix(word, i, words)) inNumber = true; // "number five" should be treated as a number.
     if (inNumber) {
       if (!wasInNumber) {
         ++numberCount;
