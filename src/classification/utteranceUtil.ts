@@ -1,3 +1,5 @@
+import { assert } from '@/common/assertUtil';
+
 function _isAllCaps(word:string):boolean {
   return word.toUpperCase() === word;
 }
@@ -18,4 +20,11 @@ export function normalizeUtterance(utterance:string):string {
 
 export function isUtteranceNormalized(utterance:string):boolean {
   return normalizeUtterance(utterance) === utterance;
+}
+
+export function findParamsInUtterance(utterance:string):string[] {
+  if (!utterance.length) return [];
+  assert(isUtteranceNormalized(utterance));
+  const words = utterance.split(' ');
+  return words.filter(_isAllCaps);
 }

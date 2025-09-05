@@ -10,7 +10,7 @@ import { replaceItems } from "./replaceItems";
 import { prompt } from "@/llm/llmUtil";
 import NShotPair from "@/llm/types/NShotPair";
 import { isDigitChar } from "@/common/regExUtil";
-import { isUtteranceNormalized } from "./utteranceUtil";
+import { findParamsInUtterance, isUtteranceNormalized } from "./utteranceUtil";
 import { endSection, log, startSection } from "@/common/describeLog";
 
 async function _makeReplacements(utterance:string):Promise<string> {
@@ -30,7 +30,24 @@ function _findChildMeaningIds(meaningId:string, meaningIndex:MeaningIndex):strin
   return meaning ? meaning.childMeaningIds : [];
 }
 
+function _findMatchingNShotResponse(utterance:string, nShotPairs:NShotPair[]):string|null {
+  assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
+  for(let i = 0; i < nShotPairs.length; ++i) {
+    if (nShotPairs[i].userMessage.toLowerCase() === utterance.toLowerCase()) return nShotPairs[i].assistantResponse;
+  }
+  return null;
+}
+
+function _doesUtteranceContainAllParams(utterance:string, params:string[]):boolean {
+  assert(isUtteranceNormalized(utterance), `Utterance not normalized: "${utterance}"`);
+  const utteranceParams = findParamsInUtterance(utterance);
+  return params.every(param => utteranceParams.some(u => u === param));
+}
+
 async function _evaluateMeaningMatch(utterance:string, meaning:Meaning):Promise<string> {
+  const nShotResponse = _findMatchingNShotResponse(utterance, meaning.nShotPairs);
+  if (nShotResponse) return nShotResponse; // No need to prompt if n-shot already specifies a response.
+  if (!_doesUtteranceContainAllParams(utterance, meaning.params)) return 'N'; // Impossible to match if not all params present.
   const SYSTEM_MESSAGE = `User will say a phrase. ` +
     `Output a single letter "Y" for yes, "N" for no, or "M" for maybe ` + 
     `based on your certainty that the user's phrase matches the following rule: ${meaning.promptInstructions}\n` +

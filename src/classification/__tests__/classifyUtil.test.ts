@@ -3,7 +3,7 @@ import { describe, it, beforeEach, expect } from 'vitest';
 import { exampleMeaningIndex } from './data/meaningIndexTestData';
 import { exampleCorpus } from './data/corpusTestData';
 import { TestExports, classify, classifyUtterance } from '../classifyUtil';
-import MeaningIndex from '@/impexp/types/MeaningIndex';
+import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from '@/impexp/types/MeaningIndex';
 import { disableConsoleWarn, reenableConsoleWarn } from '@/common/testUtil';
 import { flush } from '@/common/describeLog';
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
@@ -26,9 +26,9 @@ describe('classifyUtil', () => {
       const concat = TestExports._concatCandidateMeanings(['1.1', '1.2', '1.3'], meaningIndex!);
       const lines = concat.split('\n');
       expect(lines.length).toBe(3);
-      expect(lines[0]).toBe('1 User declares or implies they are adding things to a container. They do not specify a NUMBER that would identify a container. They do not specify ITEMS to add to a container.');
-      expect(lines[1]).toBe('2 User specifies ITEMS to add to a container. They do not specify a NUMBER that would identify a container.');
-      expect(lines[2]).toBe('3 User specifies or implies they are adding something to a container. They specifiy a NUMBER that would identify a container. They do not specify ITEMS that they are adding.');
+      expect(lines[0]).toBe(`1 User doesn't specify the "NUMBER" keyword or, if specified, it isn't used as a destination for adding. User doesn't specify the "ITEMS" keyword.`);
+      expect(lines[1]).toBe(`2 User specifies "ITEMS" keyword to represent items to add to a container. User doesn't specify the "NUMBER" keyword or, if specified, it isn't used as a destination for adding.`);
+      expect(lines[2]).toBe(`3 User specifies "NUMBER" keyword to represent a destination for adding items. User doesn't specify the "ITEMS" keyword.`);
     });
   });
 
@@ -112,7 +112,8 @@ describe('classifyUtil', () => {
 
   describe('classify()', () => {
     let corpus:string[];
-    beforeEach(() => {
+
+    beforeEach(async () => {
       corpus = [...exampleCorpus];
       expect(corpus).toEqual(exampleCorpus);
     });
@@ -122,16 +123,14 @@ describe('classifyUtil', () => {
       expect(classifications).toEqual({});
     });
 
-    it.only('classifies a corpus of utterances', async () => {
+    const DISPLAY_DESCRIBE_LOG = false;
+    it('classifies multiple utterances', async () => {
       const classifications:MeaningClassifications = await classify(corpus, meaningIndex!);
-      /* expect(Object.keys(classifications).length).toBe(13);
-      expect(classifications['0']).toBe(3);
-      expect(classifications['1']).toBe(10);
-      expect(classifications['1.1']).toBe(4);
-      expect(classifications['1.2']).toBe(3);
-      expect(classifications['1.3']).toBe(3); */
-      console.log('classifications', classifications);
-      console.log(flush());
-    }, INFERENCE_TIMEOUT * 2); // Very slow on first pass, but then it will be cached.
+      if (DISPLAY_DESCRIBE_LOG) flush();
+      expect(Object.keys(classifications).length).toBeGreaterThan(0);
+      // I don't want to test that all the corpus classifications are as expected. The classifyUtterance()
+      // tests will handle that in a more readable and maintainable way. This test is just making sure that
+      // we can pump a bunch of utterances through and get them all classified.
+    }, INFERENCE_TIMEOUT * 10); // Very slow on first pass, but then it will be cached.
   });
 });
