@@ -34,3 +34,7 @@ export function flush():string {
   _clearLog();
   return result;
 }
+
+export function includes(matchText:string):boolean {
+  return theLog.some(line => line.indexOf(matchText) !== -1);
+}

@@ -14,22 +14,18 @@ describe('verbUtil', () => {
       startSection('returns true for a placement verb');
       const placementVerbs = ["deliver","transfer","push","pull","lift","drop off","ship","send","throw in","park"];
       for (let i = 0; i < placementVerbs.length; ++i) {
-        //expect(await isPlacementVerb(placementVerbs[i])).toBeTruthy();
-        await isPlacementVerb(placementVerbs[i]);
+        expect(await isPlacementVerb(placementVerbs[i])).toBeTruthy();
       }
       endSection();
-      console.log(flush());
     });
 
     it('returns false for a stative verb', async () => {
       const stativeVerbs = ["exist","remain","belong","seem","appear","resemble","consist","contain","weigh"];
       startSection('returns false for a stative verb');
       for (let i = 0; i < stativeVerbs.length; ++i) {
-        //expect(await isPlacementVerb(stativeVerbs[i])).toBeFalsy();
-        await isPlacementVerb(stativeVerbs[i]);
+        expect(await isPlacementVerb(stativeVerbs[i])).toBeFalsy();
       }
       endSection();
-      console.log(flush());
     });
   });
 });

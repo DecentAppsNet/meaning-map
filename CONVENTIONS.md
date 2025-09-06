@@ -26,5 +26,19 @@ These conventions are intentionally small and pragmatic; follow existing style w
 - Put filesystem / networking / O/S API calls in separate modules that are easily mockable.
 - Test one thing per test.
 - Test exported APIs of modules, not helper functions. Helper functions might initially be tested directly, but as a module matures, the tests should move to exported APIs to cover the same functionality.
+- Hierarchy is:
+  ```
+	describe('MODULE_NAME', {} => {
+		describe('FUNCTION()', () => {
+			it('DOES A THING', () => {
+			});
+		});
+	});
+	```
+
+	When a set of tests don't match up well with a single function, it is okay for the second-level describe to use a description of functionality instead, e.g. `describe('traversing nodes', ...)`.
+
+	When there are useful subgroups of functionality under the second-level, you can add a third-level describe, e.g. `describe(`when validation errors occur`, ...)`.
+
 - Use liberal, guilt-free coverage exclusion for low-test-value code, BUT...
 - Arrive at 100% test coverage after these exclusions are made.

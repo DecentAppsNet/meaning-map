@@ -10,6 +10,7 @@ function _getPreviousTokenPartOfSpeech(sentenceTokens:SentenceToken[], index:num
 }
 
 function _getNextTokenPartOfSpeech(sentenceTokens:SentenceToken[], index:number):string {
+  /* v8 ignore next */ // The OOB guard is appropriate, but this function will currently never be called in the case where index is at end of sentence.
   return index < sentenceTokens.length - 1 ? sentenceTokens[index + 1].partOfSpeech : '';
 }
 

@@ -22,6 +22,15 @@ describe('sentenceUtil', () => {
       expect(_getPrenominalSpan('running water is essential', 'water')).toBe('running water');
     });
 
+    it('contract test: gerund detection when next token is NOUN using constructed tokens', () => {
+      const sentenceTokens: any[] = [
+        { value: 'running', fromPos: 0, toPos: 7, partOfSpeech: 'VERB' },
+        { value: 'water', fromPos: 8, toPos: 13, partOfSpeech: 'NOUN' }
+      ];
+      const firstI = findPrenominalModifiers(sentenceTokens as any, 1);
+      expect(firstI).toBe(0);
+    });
+
     it('includes determiners directly before a noun', () => {
       expect(_getPrenominalSpan('this is the way', 'way')).toBe('the way');
     });

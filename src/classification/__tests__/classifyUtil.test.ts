@@ -5,7 +5,7 @@ import { exampleCorpus } from './data/corpusTestData';
 import { TestExports, classify, classifyUtterance } from '../classifyUtil';
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from '@/impexp/types/MeaningIndex';
 import { disableConsoleWarn, reenableConsoleWarn } from '@/common/testUtil';
-import { flush } from '@/common/describeLog';
+import { flush, includes, log } from '@/common/describeLog';
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
 
 describe('classifyUtil', () => {
@@ -99,14 +99,50 @@ describe('classifyUtil', () => {
 
   const INFERENCE_TIMEOUT = 120000; // Terribly slow on first pass, but then it will be cached.
   describe('classifyUtterance()', () => {
-    it('classifies an utterance to a meaning with an exact n-shot "Y" match', async () => {
-      const meaningId = await classifyUtterance("i'm putting an apple inside", meaningIndex!);
-      expect(meaningId).toBe('1.2');
+    /*
+    Tests - use nShotPairs as needed to avoid non-deterministic LLM responses.
+
+    returns unclassified for an empty string
+
+    returns unclassified for an utterance that doesn't match top-level meanings
+
+    returns unclassified for an utterance that matches #0 n-shot pair with "Y".
+
+    returns top-level ID for an utterance that matches the top-level, but not children.
+
+
+
+    */
+    it('returns unclassified for an empty string', async () => {
+      const meaningId = await classifyUtterance("", meaningIndex!);
+      expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
     }, INFERENCE_TIMEOUT);
 
-    it('classifies an utterance to a meaning without an exact n-shot "Y" match', async () => {
-      const meaningId = await classifyUtterance("i got to add stuff", meaningIndex!);
-      expect(meaningId).toBe('1.1');
+    it(`returns unclassified for an utterance that doesn't match top-level meanings`, async () => {
+      const meaningId = await classifyUtterance("x97sdfs213", meaningIndex!);
+      expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
+    }, INFERENCE_TIMEOUT);
+
+    it(`returns unclassified for an utterance that matches #0 n-shot pair with "Y".`, async () => {
+      const meaningId = await classifyUtterance("uh", meaningIndex!);
+      expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
+    }, INFERENCE_TIMEOUT);
+
+    it(`returns top-level ID for an utterance that matches the top-level, but not children.`, async () => {
+      const meaningId = await classifyUtterance("test: hmm", meaningIndex!);
+      expect(meaningId).toBe("999");
+    }, INFERENCE_TIMEOUT);
+    
+    it(`returns ID for an utterance that matches non-top-level meaning.`, async () => {
+      const meaningId = await classifyUtterance("test: i always like to pet dogs", meaningIndex!);
+      expect(meaningId).toBe("999.1.2");
+    }, INFERENCE_TIMEOUT);
+
+    it(`returns ID for an utterance that could potentially match to more than one child.`, async () => {
+      flush();
+      await classifyUtterance("test: the kiwi is furry, prickly", meaningIndex!);
+      expect(includes('Directly comparing')).toEqual(true);
+      // I don't care what the meaning ID is because that's a non-deterministic LLM response.
     }, INFERENCE_TIMEOUT);
   });
 

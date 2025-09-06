@@ -13,10 +13,13 @@ import { isDigitChar } from "@/common/regExUtil";
 import { findParamsInUtterance, isUtteranceNormalized } from "./utteranceUtil";
 import { endSection, log, startSection } from "@/common/describeLog";
 
+const TEST_PREFIX = 'test: ';
 async function _makeReplacements(utterance:string):Promise<string> {
   // This logic is coupled to Bintopia. Think about generalizing it later.
+  const wasTestPrefixed = utterance.startsWith(TEST_PREFIX);
   utterance = await replaceItems(utterance); // Numbers might be part of ITEMS, e.g. "two apples".
   utterance = replaceNumbers(utterance); // Numbers that aren't part of ITEMS will be NUMBERS.
+  if (wasTestPrefixed && !utterance.startsWith(TEST_PREFIX)) utterance = `${TEST_PREFIX}${utterance}`; // Need to preserve test prefix for unit tests to work.
   return utterance;
 }
 
@@ -218,6 +221,11 @@ function _logUtterance(utterance:string, original:string):void {
 export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex):Promise<string> {
   const replacedUtterance = await _makeReplacements(utterance);
   _logUtterance(replacedUtterance, utterance);
+  const unclassifiedMeaning = meaningIndex[UNCLASSIFIED_MEANING_ID];
+  if (unclassifiedMeaning) { 
+    const response = _findMatchingNShotResponse(replacedUtterance, unclassifiedMeaning.nShotPairs);
+    if (response === 'Y') { log('Matched unclassified n-shot - returning #0.'); return UNCLASSIFIED_MEANING_ID; }
+  }
   return await _classifyUtteranceRecursively(replacedUtterance, meaningIndex, UNCLASSIFIED_MEANING_ID);  
 }
 

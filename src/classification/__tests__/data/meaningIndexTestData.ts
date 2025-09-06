@@ -91,5 +91,94 @@ export const exampleMeaningIndex:MeaningIndex = {
     ],
     parentMeaningId: "1",
     childMeaningIds: []
-  }
+  },
+
+  // The meanings under 999 are contrived to make tests hit certain conditions. To avoid
+  // non-deterministic LLM responses, use nShotPairs to cover utterances in tests as they
+  // will deterministically return their responses for matches. (No mocking needed.)
+  "999": {
+    meaningId: "999",
+    description: "Test Meanings",
+    params: [],
+    promptInstructions: `User has the keyword "test:" at the beginning of their request.`,
+    nShotPairs: [
+      { userMessage: "test", assistantResponse: "N" },
+      { userMessage: "test:", assistantResponse: "Y" },
+      { userMessage: "test me", assistantResponse: "N" },
+      { userMessage: "test: me", assistantResponse: "Y" },
+      { userMessage: "test: hello my name is simon", assistantResponse: "Y" },
+      { userMessage: "test: ITEMS are nice to have", assistantResponse: "Y" },
+      { userMessage: "testosterone does not go on pizza", assistantResponse: "N" } 
+    ],
+    parentMeaningId: "0",
+    childMeaningIds: ["999.1", "999.2", "999.3"]
+  },
+  "999.1": {
+    meaningId: "999.1",
+    description: "ITEMS is probably an animal",
+    params: ["ITEMS"],
+    promptInstructions: "User describes ITEMS with animal-like attributes.",
+    nShotPairs: [
+      { userMessage: "test: i always like to pet ITEMS", assistantResponse: "Y" },
+      { userMessage: "test: ITEMS is furry, prickly", assistantResponse: "M" },
+      { userMessage: "test: ITEMS is something i eat", assistantResponse: "M" },
+      { userMessage: "test: i see ITEMS in the heavens", assistantResponse: "N" },
+    ],
+    parentMeaningId: "999",
+    childMeaningIds: ["999.1.1", "999.1.2"]
+  },
+  "999.1.1": {
+    meaningId: "999.1.1",
+    description: "user intends to eat ITEMS",
+    params: ["ITEMS"],
+    promptInstructions: "User likes to or plans to eat ITEMS.",
+    nShotPairs: [
+      { userMessage: "test: ITEMS taste better than anything else", assistantResponse: "Y" },
+      { userMessage: "test: ITEMS are inedible", assistantResponse: "N" },
+      { userMessage: "test: ITEMS is something i eat", assistantResponse: "Y" },
+      { userMessage: "test: i always like to pet ITEMS", assistantResponse: "N" },
+    ],
+    parentMeaningId: "999.1",
+    childMeaningIds: []
+  },
+  "999.1.2": {
+    meaningId: "999.1",
+    description: "ITEMS is a pet",
+    params: ["ITEMS"],
+    promptInstructions: "User thinks of ITEMS as a pet",
+    nShotPairs: [
+      { userMessage: "test: i always like to pet ITEMS", assistantResponse: "Y" },
+      { userMessage: "test: i brought ITEMS for a walk", assistantResponse: "Y" },
+      { userMessage: "test: ITEMS is a ferocious killer", assistantResponse: "N" },
+    ],
+    parentMeaningId: "999.1",
+    childMeaningIds: []
+  },
+  "999.2": {
+    meaningId: "999.2",
+    description: "ITEMS is probably a vegetable",
+    params: ["ITEMS"],
+    promptInstructions: "User describes ITEMS with vegetable-like attributes.",
+    nShotPairs: [
+      { userMessage: `test: ITEMS grow underground and are typically prepared hot.`, assistantResponse: "Y" },
+      { userMessage: `test: ITEMS are tasty and good for your health`, assistantResponse: "M" },
+      { userMessage: "test: ITEMS is furry, prickly", assistantResponse: "M" },
+      { userMessage: "test: ITEMS is something i eat", assistantResponse: "M" }
+    ],
+    parentMeaningId: "999",
+    childMeaningIds: []
+  },
+  "999.3": {
+    meaningId: "999.3",
+    description: "ITEMS is probably a mineral",
+    params: ["ITEMS"],
+    promptInstructions: "User describes ITEMS with mineral-like attributes.",
+    nShotPairs: [
+      { userMessage: `test: ITEMS conducts electricity efficiently and adds sparkle to designs`, assistantResponse: "Y" },
+      { userMessage: `test: ITEMS are forever`, assistantResponse: "M" },
+      { userMessage: `test: i eat ITEMS every day`, assistantResponse: "N" }
+    ],
+    parentMeaningId: "999",
+    childMeaningIds: []
+  },
 };
