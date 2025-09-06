@@ -1,30 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { flush, log, startSection, endSection, includes } from '../describeLog';
+import { flushLog, log, startSection, endSection, doesLogInclude } from '../describeLog';
 import { disableConsoleError, reenableConsoleError } from '@/common/testUtil';
 
 describe('describeLog', () => {
-  describe('flush()', () => {
+  describe('flushLog()', () => {
     it('returns joined lines and clears the buffer', () => {
-      flush();
+      flushLog();
       log('first');
       log('second');
-      const out = flush();
+      const out = flushLog();
       expect(out).toBe('first\nsecond');
       // buffer cleared
-      expect(flush()).toBe('');
+      expect(flushLog()).toBe('');
     });
   });
 
   describe('sections', () => {
     it('emits section markers and indented lines', () => {
-      flush();
+      flushLog();
       log('a');
       startSection('section1');
       log('b');
       endSection();
       log('c');
 
-      const out = flush();
+      const out = flushLog();
       const lines = out.split('\n');
       expect(lines[0]).toBe('a');
       expect(lines[1]).toBe('section1 {');
@@ -34,49 +34,49 @@ describe('describeLog', () => {
     });
 
     it('allows endSection() when no active section and logs closing brace', () => {
-      flush();
+      flushLog();
       disableConsoleError();
       try {
         expect(() => endSection()).not.toThrow();
       } finally {
         reenableConsoleError();
       }
-      expect(flush()).toBe('}');
+      expect(flushLog()).toBe('}');
     });
   });
 
-  describe('includes()', () => {
+  describe('doesLogInclude()', () => {
     it('returns true for empty search string when buffer has content', () => {
-      flush();
+      flushLog();
       log('first');
-      expect(includes('')).toBe(true);
+      expect(doesLogInclude('')).toBe(true);
     });
 
     it('returns false when there is no match', () => {
-      flush();
+      flushLog();
       log('hello');
       log('world');
-      expect(includes('foo')).toBe(false);
+      expect(doesLogInclude('foo')).toBe(false);
     });
 
     it('finds a match on the first line', () => {
-      flush();
+      flushLog();
       log('match-me');
       log('other');
-      expect(includes('match-me')).toBe(true);
+      expect(doesLogInclude('match-me')).toBe(true);
     });
 
     it('finds a match on a line after the first', () => {
-      flush();
+      flushLog();
       log('first-line');
       log('second-line');
-      expect(includes('second-line')).toBe(true);
+      expect(doesLogInclude('second-line')).toBe(true);
     });
 
     it('returns false against an empty buffer', () => {
-      flush();
-      expect(includes('anything')).toBe(false);
-      expect(includes('')).toBe(false);
+      flushLog();
+      expect(doesLogInclude('anything')).toBe(false);
+      expect(doesLogInclude('')).toBe(false);
     });
   });
 });

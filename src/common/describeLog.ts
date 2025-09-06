@@ -29,12 +29,12 @@ export function log(message:string) {
   theLog.push(indent + message);
 }
 
-export function flush():string {
+export function flushLog():string {
   const result = theLog.join('\n');
   _clearLog();
   return result;
 }
 
-export function includes(matchText:string):boolean {
+export function doesLogInclude(matchText:string):boolean {
   return theLog.some(line => line.indexOf(matchText) !== -1);
 }

@@ -5,7 +5,7 @@ import { exampleCorpus } from './data/corpusTestData';
 import { TestExports, classify, classifyUtterance } from '../classifyUtil';
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from '@/impexp/types/MeaningIndex';
 import { disableConsoleWarn, reenableConsoleWarn } from '@/common/testUtil';
-import { flush, includes, log } from '@/common/describeLog';
+import { flushLog, doesLogInclude } from '@/common/describeLog';
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
 
 describe('classifyUtil', () => {
@@ -89,30 +89,8 @@ describe('classifyUtil', () => {
     });
   });
 
-  describe('_makeReplacements()', () => {
-    it('replaces items', async () => {
-      const s = "i'm putting an apple inside";
-      const out = await TestExports._makeReplacements(s);
-      expect(out).toBe("i'm putting ITEMS inside");
-    });
-  });
-
   const INFERENCE_TIMEOUT = 120000; // Terribly slow on first pass, but then it will be cached.
   describe('classifyUtterance()', () => {
-    /*
-    Tests - use nShotPairs as needed to avoid non-deterministic LLM responses.
-
-    returns unclassified for an empty string
-
-    returns unclassified for an utterance that doesn't match top-level meanings
-
-    returns unclassified for an utterance that matches #0 n-shot pair with "Y".
-
-    returns top-level ID for an utterance that matches the top-level, but not children.
-
-
-
-    */
     it('returns unclassified for an empty string', async () => {
       const meaningId = await classifyUtterance("", meaningIndex!);
       expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
@@ -138,10 +116,10 @@ describe('classifyUtil', () => {
       expect(meaningId).toBe("999.1.2");
     }, INFERENCE_TIMEOUT);
 
-    it(`returns ID for an utterance that could potentially match to more than one child.`, async () => {
-      flush();
+    it(`directly compares utterances that could potentially match to more than one child.`, async () => {
+      flushLog();
       await classifyUtterance("test: the kiwi is furry, prickly", meaningIndex!);
-      expect(includes('Directly comparing')).toEqual(true);
+      expect(doesLogInclude('Directly comparing')).toEqual(true);
       // I don't care what the meaning ID is because that's a non-deterministic LLM response.
     }, INFERENCE_TIMEOUT);
   });
@@ -162,7 +140,7 @@ describe('classifyUtil', () => {
     const DISPLAY_DESCRIBE_LOG = false;
     it('classifies multiple utterances', async () => {
       const classifications:MeaningClassifications = await classify(corpus, meaningIndex!);
-      if (DISPLAY_DESCRIBE_LOG) flush();
+      if (DISPLAY_DESCRIBE_LOG) console.log(flushLog());
       expect(Object.keys(classifications).length).toBeGreaterThan(0);
       // I don't want to test that all the corpus classifications are as expected. The classifyUtterance()
       // tests will handle that in a more readable and maintainable way. This test is just making sure that

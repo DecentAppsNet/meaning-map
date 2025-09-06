@@ -2,13 +2,14 @@ import { describe, it, expect, beforeAll } from 'vitest'
 
 import { initEmbedder } from '@/embeddings/transformersEmbedder'
 import { isPlacementVerb } from '../verbUtil'
-import { endSection, flush, startSection } from '@/common/describeLog'
+import { endSection, flushLog, startSection } from '@/common/describeLog'
 
 describe('verbUtil', () => {
   beforeAll(async () => {
     await initEmbedder();
   });
 
+  const DISPLAY_DESCRIBE_LOG = false;
   describe('isPlacementVerb()', () => {
     it('returns true for a placement verb', async () => {
       startSection('returns true for a placement verb');
@@ -17,6 +18,7 @@ describe('verbUtil', () => {
         expect(await isPlacementVerb(placementVerbs[i])).toBeTruthy();
       }
       endSection();
+      if (DISPLAY_DESCRIBE_LOG) console.log(flushLog());
     });
 
     it('returns false for a stative verb', async () => {
@@ -26,6 +28,7 @@ describe('verbUtil', () => {
         expect(await isPlacementVerb(stativeVerbs[i])).toBeFalsy();
       }
       endSection();
+      if (DISPLAY_DESCRIBE_LOG) console.log(flushLog());
     });
   });
 });
