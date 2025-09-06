@@ -30,7 +30,8 @@ function _findTopLevelMeaningIds(meaningIndex:MeaningIndex):string[] {
 function _findChildMeaningIds(meaningId:string, meaningIndex:MeaningIndex):string[] {
   if (meaningId === UNCLASSIFIED_MEANING_ID) return _findTopLevelMeaningIds(meaningIndex);
   const meaning = meaningIndex[meaningId];
-  return meaning ? meaning.childMeaningIds : [];
+  assertNonNullable(meaning, `${meaningId} not found in meaningIndex.`);
+  return meaning.childMeaningIds;
 }
 
 function _findMatchingNShotResponse(utterance:string, nShotPairs:NShotPair[]):string|null {
@@ -57,9 +58,12 @@ async function _evaluateMeaningMatch(utterance:string, meaning:Meaning):Promise<
     `Do not output more or less than a single letter.`;
   const response = await prompt(utterance, SYSTEM_MESSAGE, meaning.nShotPairs, 2);
   const singleChar = response.trim().toUpperCase().substring(0, 1);
+  /* v8 ignore start */ // The false path below is not worth contriving for.
   if (['Y', 'N', 'M'].includes(singleChar)) return singleChar;
+  // LLM didn't follow instructions. Just return "maybe" and keep moving.
   return 'M';
 }
+/* v8 ignore end */
 
 // Find first contiguous sequence of digits and return as a number, or -1 if none found.
 function _parseNumberFromResponse(response:string):number {
