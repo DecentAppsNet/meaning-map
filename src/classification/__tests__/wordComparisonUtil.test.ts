@@ -1,7 +1,10 @@
 import { describe, expect, it, beforeEach, beforeAll } from 'vitest';
 
-import { compareNouns, createNounMatchCriteria, doesNounMatchCriteria } from "../wordComparisonUtil";
 import { initEmbedder, clearEmbeddingCache } from '@/embeddings/transformersEmbedder';
+import { createWordCentroid, createWordsCentroid } from '../wordComparisonUtil';
+import { compareUnitVectors } from '@/embeddings/vectorUtil';
+
+const EMBED_TIMEOUT = 5000;
 
 describe('wordComparisonUtil', () => {
   beforeAll(async () => {
@@ -12,41 +15,40 @@ describe('wordComparisonUtil', () => {
     clearEmbeddingCache();
   });
 
-  describe('compareNouns()', () => {
-    it('returns 1.0 for identical nouns', async () => {
-      const similarity = await compareNouns('cat', 'cat');
-      expect(similarity).toBeCloseTo(1.0, 5);
-    });
+  it('returns nearly-identical centroids for the same word', async () => {
+    const templates = ['I have ___', 'put ___ in the box'];
+    const a = await createWordCentroid('apple', templates);
+    const b = await createWordCentroid('apple', templates);
+    const sim = compareUnitVectors(a, b);
+    expect(sim).toBeGreaterThan(0.995);
+  }, EMBED_TIMEOUT);
 
-    it('returns a low score for two completely different nouns', async () => {
-      expect(await compareNouns('flower', 'army')).toBeLessThan(0.5);
-    });
+  it('returns noticeably different centroids for different words', async () => {
+    const templates = ['I have ___', 'put ___ in the box'];
+    const a = await createWordCentroid('apple', templates);
+    const o = await createWordCentroid('orange', templates);
+    const sim = compareUnitVectors(a, o);
+    expect(sim).toBeLessThan(0.99);
+  }, EMBED_TIMEOUT);
 
-    it('returns a high score for two similar nouns', async () => {
-      expect(await compareNouns('flower', 'rose')).toBeGreaterThan(0.5);
-    });
-  });
+  it('group centroid is closer to a member word than to an unrelated word', async () => {
+    const templates = ['I have ___', 'put ___ in the box'];
+    const group = await createWordsCentroid(['apple', 'pear'], templates);
+    const apple = await createWordCentroid('apple', templates);
+    const car = await createWordCentroid('car', templates);
+    const simApple = compareUnitVectors(group, apple);
+    const simCar = compareUnitVectors(group, car);
+    expect(simApple).toBeGreaterThan(simCar);
+  }, EMBED_TIMEOUT);
 
-  describe('doesNounMatchCriteria()', () => {
-    it('returns true when a noun matches a high-threshold self-criterion and false for unrelated nouns', async () => {
-      const criteria = await createNounMatchCriteria(['cat@0.95', 'dog@0.95']);
-      // 'cat' should match the 'cat@0.95' criterion (self-similarity)
-      expect(await doesNounMatchCriteria('cat', criteria)).toBe(true);
-      // 'banana' is unlikely to match either high-threshold animal criteria
-      expect(await doesNounMatchCriteria('banana', criteria)).toBe(false);
-    });
-  });
-
-  describe('createNounMatchCriteria()', () => {
-    it('creates criteria', async () => {
-      const criteria = await createNounMatchCriteria(['dog', 'cat']);
-      expect(criteria.length).toBe(2);
-    });
-
-    it('creates criteria with custom thresholds', async () => {
-      const criteria = await createNounMatchCriteria(['dog@.3', 'cat@.4']);
-      expect(criteria[0].acceptanceThreshold).toBe(.3);
-      expect(criteria[1].acceptanceThreshold).toBe(.4);
-    });
-  });
+  it('debiasTemplates changes the resulting centroid (debiasing applied)', async () => {
+    const templates = ['I have ___'];
+    const debiasSame = ['I have ___'];
+    const debiasGeneric = ['This is a sentence about ___'];
+    const a = await createWordsCentroid(['apple'], templates, debiasSame);
+    const b = await createWordsCentroid(['apple'], templates, debiasGeneric);
+    const sim = compareUnitVectors(a, b);
+    // Expect some measurable difference when using a different debias template
+    expect(sim).toBeLessThan(0.9999);
+  }, EMBED_TIMEOUT);
 });
