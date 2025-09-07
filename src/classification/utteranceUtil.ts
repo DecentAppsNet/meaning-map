@@ -1,12 +1,12 @@
 import { assert } from '@/common/assertUtil';
 
-function _isAllCaps(word:string):boolean {
+export function isParam(word:string):boolean {
   return word.toUpperCase() === word;
 }
 
 // All caps words signify variable insertion points.
 function _normalizeWord(word:string):string {
-  if (word.length > 1 && _isAllCaps(word)) return word;
+  if (word.length > 1 && isParam(word)) return word;
   return word.toLowerCase();
 }
 
@@ -26,5 +26,5 @@ export function findParamsInUtterance(utterance:string):string[] {
   if (!utterance.length) return [];
   assert(isUtteranceNormalized(utterance));
   const words = utterance.split(' ');
-  return words.filter(_isAllCaps);
+  return words.filter(isParam);
 }
