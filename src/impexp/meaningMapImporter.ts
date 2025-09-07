@@ -22,7 +22,7 @@
 
 import { readTextFile } from "@/common/fileUtil";
 import MeaningMap from "./types/MeaningMap";
-import { normalizeUtterance } from "@/classification/utteranceUtil";
+import { normalizeUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 
 function _describeLocation(firstWord:string, entryNo?:number):string {
   return entryNo === undefined
@@ -36,7 +36,7 @@ function _parseEntry(entry:string, firstWord:string, entryNo:number) {
   const utterance = normalizeUtterance(entry.slice(0, colonPos));
   const meaningId = entry.slice(colonPos + 1).trim();
   if (!meaningId) throw new Error(`${_describeLocation(firstWord, entryNo)}: Invalid entry (empty meaningId).`);
-  const followingWords = utterance === '' ? [] : utterance.split(' ');
+  const followingWords = utterance === '' ? [] : utteranceToWords(utterance);
   return { followingWords, meaningId };
 }
 

@@ -5,23 +5,12 @@ import { importMeaningIndex } from "@/impexp/meaningIndexImporter";
 import Meaning from "@/impexp/types/Meaning";
 import MeaningClassifications from "@/impexp/types/MeaningClassifications";
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from "@/impexp/types/MeaningIndex";
-import { replaceNumbers } from "./replaceNumbers";
-import { replaceItems } from "./replaceItems";
 import { prompt } from "@/llm/llmUtil";
 import NShotPair from "@/llm/types/NShotPair";
 import { isDigitChar } from "@/common/regExUtil";
 import { findParamsInUtterance, isUtteranceNormalized } from "./utteranceUtil";
 import { endSection, log, startSection } from "@/common/describeLog";
-
-const TEST_PREFIX = 'test: ';
-async function _makeReplacements(utterance:string):Promise<string> {
-  // This logic is coupled to Bintopia. Think about generalizing it later.
-  const wasTestPrefixed = utterance.startsWith(TEST_PREFIX);
-  utterance = await replaceItems(utterance); // Numbers might be part of ITEMS, e.g. "two apples".
-  utterance = replaceNumbers(utterance); // Numbers that aren't part of ITEMS will be NUMBERS.
-  if (wasTestPrefixed && !utterance.startsWith(TEST_PREFIX)) utterance = `${TEST_PREFIX}${utterance}`; // Need to preserve test prefix for unit tests to work.
-  return utterance;
-}
+import { makeUtteranceReplacements } from '@/replacement/replaceUtil';
 
 function _findTopLevelMeaningIds(meaningIndex:MeaningIndex):string[] {
   return Object.keys(meaningIndex).filter(id => id !== UNCLASSIFIED_MEANING_ID && id.indexOf('.') === -1);
@@ -223,7 +212,7 @@ function _logUtterance(utterance:string, original:string):void {
 }
 
 export async function classifyUtterance(utterance:string, meaningIndex:MeaningIndex):Promise<string> {
-  const replacedUtterance = await _makeReplacements(utterance);
+  const [replacedUtterance] = await makeUtteranceReplacements(utterance);
   _logUtterance(replacedUtterance, utterance);
   const unclassifiedMeaning = meaningIndex[UNCLASSIFIED_MEANING_ID];
   if (unclassifiedMeaning) { 
@@ -238,11 +227,11 @@ export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promi
   startSection(`Classifying corpus - ${corpus.length} utterances`);
     for(let i = 0; i < corpus.length; ++i) {
       assert(isUtteranceNormalized(corpus[i]), `Utterance not normalized: "${corpus[i]}"`);
-      const utterance = await _makeReplacements(corpus[i]);
-      _logUtterance(utterance, corpus[i]);
-      const meaningId = await _classifyUtteranceRecursively(utterance, meaningIndex);
+      const [replacedUtterance] = await makeUtteranceReplacements(corpus[i]);
+      _logUtterance(replacedUtterance, corpus[i]);
+      const meaningId = await _classifyUtteranceRecursively(replacedUtterance, meaningIndex);
       if (!classifications[meaningId]) classifications[meaningId] = [];
-      if (!classifications[meaningId].includes(utterance)) classifications[meaningId].push(utterance); // Note that replacing items/numbers can cause duplicates even if corpus doesn't have duplicates.
+      if (!classifications[meaningId].includes(replacedUtterance)) classifications[meaningId].push(replacedUtterance); // Note that replacing items/numbers can cause duplicates even if corpus doesn't have duplicates.
     }
   endSection();
   return classifications;
@@ -260,5 +249,4 @@ export const TestExports = {
   _concatCandidateMeanings,
   _combineMeaningNShotPairs,
   _findMeaningIdsShortList,
-  _makeReplacements
 }

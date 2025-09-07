@@ -18,17 +18,17 @@ function _sortReplacements(replacements:TextReplacement[]) {
   replacements.sort((a, b) => a.fromPos - b.fromPos);
 }
 
-export function makeReplacements(sentence:string, replacements:TextReplacement[]):string {
-  if (!replacements.length) return sentence;
+export function makeReplacements(text:string, replacements:TextReplacement[]):string {
+  if (!replacements.length) return text;
   _sortReplacements(replacements);
   _assertReplacementsValid(replacements);
   let result = '', readPos = 0;
   for(let i = 0; i < replacements.length; ++i) {
     const r = replacements[i];
-    result += `${sentence.substring(readPos, r.fromPos)}${r.replacementText}`;
+    result += `${text.substring(readPos, r.fromPos)}${r.replacementText}`;
     assert(r.toPos > r.fromPos);
     readPos = r.toPos;
   }
-  result += sentence.slice(readPos);
+  result += text.slice(readPos);
   return result;
 }

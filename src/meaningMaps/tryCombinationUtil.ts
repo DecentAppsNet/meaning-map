@@ -1,4 +1,4 @@
-import { isParam, isUtteranceNormalized } from '@/classification/utteranceUtil';
+import { isParam, isUtteranceNormalized, utteranceToWords } from '@/classification/utteranceUtil';
 import { assert, botch } from '@/common/assertUtil';
 import TryCombination from './types/TryCombination';
 import WordUsageMap from './types/WordUsageMap';
@@ -54,7 +54,7 @@ function _getNextWordEnablements(enablements:boolean[], onCount:number, stopValu
 
 export function createFirstTryCombination(utterance:string, wordUsageMap:WordUsageMap):TryCombination {
   assert(isUtteranceNormalized(utterance) && utterance.length > 0);
-  const words = utterance.split(' ');
+  const words = utteranceToWords(utterance);
   const wordIndexes:number[] = words
     .map((w, i) => { return { word:w, index:i } }) // Retain the index so that it isn't lost in next steps.
     .filter(uw => !isParam(uw.word)) // Filter out parameters.
@@ -79,8 +79,10 @@ export function concatMatchWords(combination:TryCombination):string[] {
   function _isEnabledWord(wordI:number) {
     for(let i = 0; i < wordIndexes.length; ++i) {
       if (wordIndexes[i] === wordI) return wordEnablements[i];
+    /* v8 ignore start */
     }
-    botch();
+    botch('combination is invalid');
+    /* v8 ignore end */
   }
 
   const outWords:string[] = [];

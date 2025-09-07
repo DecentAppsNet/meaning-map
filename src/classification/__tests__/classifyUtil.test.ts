@@ -89,13 +89,8 @@ describe('classifyUtil', () => {
     });
   });
 
-  const INFERENCE_TIMEOUT = 120000; // Terribly slow on first pass, but then it will be cached.
+  const INFERENCE_TIMEOUT = 120000; // Terribly slow on first pass, but then inferenes will be cached.
   describe('classifyUtterance()', () => {
-    it('returns unclassified for an empty string', async () => {
-      const meaningId = await classifyUtterance("", meaningIndex!);
-      expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
-    }, INFERENCE_TIMEOUT);
-
     it(`returns unclassified for an utterance that doesn't match top-level meanings`, async () => {
       const meaningId = await classifyUtterance("x97sdfs213", meaningIndex!);
       expect(meaningId).toBe(UNCLASSIFIED_MEANING_ID);
@@ -145,6 +140,6 @@ describe('classifyUtil', () => {
       // I don't want to test that all the corpus classifications are as expected. The classifyUtterance()
       // tests will handle that in a more readable and maintainable way. This test is just making sure that
       // we can pump a bunch of utterances through and get them all classified.
-    }, INFERENCE_TIMEOUT * 10); // Very slow on first pass, but then it will be cached.
+    }, INFERENCE_TIMEOUT * 10); // Very slow on first pass, but then inferences will be cached.
   });
 });

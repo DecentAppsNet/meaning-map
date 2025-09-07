@@ -1,5 +1,6 @@
-import { assert } from '../common/assertUtil';
-import { isUtteranceNormalized } from './utteranceUtil';
+import { assert, assertNonNullable } from '../common/assertUtil';
+import { isMatchingParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '../classification/utteranceUtil';
+import ReplacedValues from './types/ReplacedValues';
 
 const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy',
@@ -18,14 +19,24 @@ function _isNumberPrefix(word:string, index:number, words:string[]):boolean {
   return numberWords.includes(words[index + 1]);
 }
 
+function _addWordToReplacedValue(paramName:string|null, word:string, replacedValues:ReplacedValues) {
+  assertNonNullable(paramName);
+  const currentValue = replacedValues[paramName];
+  const nextValue = currentValue === undefined ? word : `${currentValue} ${word}`;
+  replacedValues[paramName] = nextValue;
+}
+
 // Only supporting positive integers between zero and a trillion. This is a loose check that doesn't care about the grammar of numbers or parsing a value, 
 // e.g. "two forty" will be considered a number. Lists of multiple numbers will end up being recognized as a single number.
-export function replaceNumbers(text:string):string {
-  assert(isUtteranceNormalized(text), 'Expected normalized text');
-  const words = text.split(' ');
+export function replaceNumbers(utterance:string):[replacedUtterance:string, replacedValues:ReplacedValues] {
+  assert(isValidUtterance(utterance));
+  const replacedValues:ReplacedValues = {};
+  const words = utteranceToWords(utterance);
   const outWords:string[] = [];
   let wasInNumber = false;
   let numberCount = 0;
+  let activeParamName:string|null = null;
+
   for (let i = 0; i < words.length; ++i) {
     const word = words[i];
     let inNumber = numberWords.includes(word);
@@ -33,9 +44,11 @@ export function replaceNumbers(text:string):string {
     if (inNumber) {
       if (!wasInNumber) {
         ++numberCount;
-        outWords.push(numberCount === 1 ? 'NUMBER' : `NUMBER${numberCount}`);
+        activeParamName = numberCount === 1 ? 'NUMBER' : `NUMBER${numberCount}`;
+        outWords.push(activeParamName);
         wasInNumber = true;
       }
+      _addWordToReplacedValue(activeParamName, word, replacedValues);
     } else {
       if (wasInNumber && connectingWords.includes(word)) {
         // Find next word that is a number.
@@ -47,11 +60,26 @@ export function replaceNumbers(text:string):string {
           if (foundNumberWord || !connectingWords.includes(nextWord)) break;
           ++nextWordI;
         }
-        if (foundNumberWord) { i = nextWordI; continue; }
+        if (foundNumberWord) {
+          for(let j = i; j <= nextWordI; ++j) { _addWordToReplacedValue(activeParamName, words[j], replacedValues); }
+          i = nextWordI; continue; 
+        }
       }
       wasInNumber = false;
+      activeParamName = null;
       outWords.push(word);
     }
   }
-  return outWords.join(' ');
+  const replacedUtterance = wordsToUtterance(outWords);
+  return [replacedUtterance, replacedValues];
+}
+
+// Useful for testing. Converts "NUMBER" and "NUMBERn" with placeholders that are expected to
+// symmetrically be replaced back to the original values if run through replaceNumbers().
+export function unreplaceNumbersWithPlaceholders(utterance:string):string {
+  const words = utteranceToWords(utterance);
+  const unreplacedWords = words.map(word => {
+    return isMatchingParam(word, 'NUMBER') ? 'three' : word;
+  });
+  return wordsToUtterance(unreplacedWords);
 }
