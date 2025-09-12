@@ -22,6 +22,7 @@ cache/*.txt
 cache/*.md
 cache/.llm*
 datasets/*
+!datasets/.gitkeep
 
 # Environment vars
 .env
