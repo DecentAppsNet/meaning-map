@@ -1,3 +1,6 @@
+#!/usr/bin/env tsx
+// scripts/mm.ts
+
 import { argsToCommand, Command, findOptionValue } from "./helpers/commandUtil";
 import ExpectedError from "./helpers/ExpectedError";
 import { createMeaningClassification } from "../src/classification/classifyUtil";

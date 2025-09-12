@@ -4,6 +4,9 @@
   "main": "dist/meaning-map.cjs.js",
   "module": "dist/meaning-map.esm.js",
   "types": "dist/types/index.d.ts",
+  "bin": {
+    "mm": "./mm.sh"
+  },
   "private": false,
   "license": "MIT",
   "author": "Erik Hermansen",
