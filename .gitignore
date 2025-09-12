@@ -23,6 +23,7 @@ cache/*.md
 cache/.llm*
 datasets/*
 !datasets/.gitkeep
+!packables-minimal-for-test.txt
 
 # Environment vars
 .env
