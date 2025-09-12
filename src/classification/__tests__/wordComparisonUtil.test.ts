@@ -9,7 +9,7 @@ const EMBED_TIMEOUT = 5000;
 describe('wordComparisonUtil', () => {
   beforeAll(async () => {
     await initEmbedder();
-  });
+  }, 60000);
 
   beforeEach(() => {
     clearEmbeddingCache();

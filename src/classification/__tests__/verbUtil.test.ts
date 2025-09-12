@@ -7,7 +7,7 @@ import { endSection, flushLog, startSection } from '@/common/describeLog'
 describe('verbUtil', () => {
   beforeAll(async () => {
     await initEmbedder();
-  });
+  }, 60000);
 
   const DISPLAY_DESCRIBE_LOG = false;
   describe('isPlacementVerb()', () => {
