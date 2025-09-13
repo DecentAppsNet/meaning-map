@@ -9,7 +9,7 @@ import { prompt } from "@/llm/llmUtil";
 import NShotPair from "@/llm/types/NShotPair";
 import { isDigitChar } from "@/common/regExUtil";
 import { findParamsInUtterance, isUtteranceNormalized } from "./utteranceUtil";
-import { endSection, log, startSection } from "@/common/describeLog";
+import { endSection, log, setStatus, startSection } from "@/common/describeLog";
 import { makeUtteranceReplacements } from '@/replacement/replaceUtil';
 
 function _findTopLevelMeaningIds(meaningIndex:MeaningIndex):string[] {
@@ -226,6 +226,7 @@ export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promi
   const classifications:MeaningClassifications = {};
   startSection(`Classifying corpus - ${corpus.length} utterances`);
     for(let i = 0; i < corpus.length; ++i) {
+      setStatus(`Classifying`, i+1, corpus.length);
       assert(isUtteranceNormalized(corpus[i]), `Utterance not normalized: "${corpus[i]}"`);
       const [replacedUtterance] = await makeUtteranceReplacements(corpus[i]);
       _logUtterance(replacedUtterance, corpus[i]);
@@ -240,8 +241,17 @@ export async function classify(corpus:string[], meaningIndex:MeaningIndex):Promi
 export async function createMeaningClassification(corpusFilepath:string, meaningIndexFilepath:string, classificationFilepath:string) {
   const corpus = await importCorpus(corpusFilepath);
   const meaningIndex = await importMeaningIndex(meaningIndexFilepath);
-  const classifications = await classify(corpus, meaningIndex);
-  exportMeaningClassifications(classifications, classificationFilepath, meaningIndex);
+  const classifications:MeaningClassifications = {};
+  for(let i = 0; i < corpus.length; ++i) {
+    setStatus(`Classifying`, i+1, corpus.length);
+    assert(isUtteranceNormalized(corpus[i]), `Utterance not normalized: "${corpus[i]}"`);
+    const [replacedUtterance] = await makeUtteranceReplacements(corpus[i]);
+    _logUtterance(replacedUtterance, corpus[i]);
+    const meaningId = await _classifyUtteranceRecursively(replacedUtterance, meaningIndex);
+    if (!classifications[meaningId]) classifications[meaningId] = [];
+    if (!classifications[meaningId].includes(replacedUtterance)) classifications[meaningId].push(replacedUtterance);
+    exportMeaningClassifications(classifications, classificationFilepath, meaningIndex); // Exports multiple times because it can be a long-running process.
+  }
 }
 
 export const TestExports = {

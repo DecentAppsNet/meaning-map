@@ -1,8 +1,16 @@
 
 /* Used for keeping a description of things that happen across many calls without console.log(). */
 
+export type OnStatusCallback = (message:string, completedCount:number, totalCount:number) => void;
+
 let theLog:string[] = [];
 let theIndentLevel = 0;
+let theOnStatus:OnStatusCallback|null = null;
+
+export function setOnStatusCallback(callback:OnStatusCallback|null) {
+  theOnStatus = callback;
+}
+
 const INDENT = '  ';
 
 function _clearLog() {
@@ -37,4 +45,8 @@ export function flushLog():string {
 
 export function doesLogInclude(matchText:string):boolean {
   return theLog.some(line => line.indexOf(matchText) !== -1);
+}
+
+export function setStatus(message:string, completedCount:number, totalCount:number) {
+  if (theOnStatus) theOnStatus(message, completedCount, totalCount);
 }

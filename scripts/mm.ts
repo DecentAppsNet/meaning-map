@@ -1,9 +1,11 @@
 #!/usr/bin/env tsx
 // scripts/mm.ts
 
-import { argsToCommand, Command, findOptionValue } from "./helpers/commandUtil";
+import { argsToCommand, Command, findOptionValue, hasOption } from "./helpers/commandUtil";
 import ExpectedError from "./helpers/ExpectedError";
+import { setOnStatusCallback } from "../src/common/describeLog";
 import { createMeaningClassification } from "../src/classification/classifyUtil";
+import { displayStatusOnUpdate, outputStatus } from "./helpers/outputUtil";
 
 // ANSI text-formatting codes for console output.
 const ANSI_START_GREEN = "\x1b[32m";
@@ -15,20 +17,24 @@ const theAvailableOptions = {
   'c':'corpus',
   'l':'classification',
   'm':'meaning-index',
-  'o':'output'
+  'o':'output',
+  'v':'verbose'
 }
 
 async function _classify(command:Command) {
   const meaningIndexFilepath = findOptionValue(command, 'm');
   const corpusFilepath = findOptionValue(command, 'c');
   const outputFilepath = findOptionValue(command, 'o');
+  const isVerbose = hasOption(command, 'v');
   if (!meaningIndexFilepath) throw new ExpectedError('-m|--meaning-index option not followed by filepath.');
   if (!corpusFilepath) throw new ExpectedError('-c|--corpus option not followed by filepath.');
   if (!outputFilepath) throw new ExpectedError('-o|--output option not followed by filepath.');
-  // await createMeaningClassification(meaningIndexFilepath, corpusFilepath, outputFilepath);
-  // NEXT check that the basic command line stuff works. You'll also need...
-  // ...some kind of status messages from the long-running functions.
-  // meaningMapUtil.ts needs file I/O API.
+
+  setOnStatusCallback((message, completedCount, totalCount) => {
+    displayStatusOnUpdate(message, completedCount, totalCount, isVerbose);
+  });
+
+  await createMeaningClassification(meaningIndexFilepath, corpusFilepath, outputFilepath);
 }
 
 async function _map(command:Command) {
