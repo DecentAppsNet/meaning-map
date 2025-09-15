@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { flushLog, log, startSection, endSection, doesLogInclude } from '../describeLog';
+import { flushLog, log, startSection, endSection, doesLogInclude, setOnStatusCallback, setStatus } from '../describeLog';
 import { disableConsoleError, reenableConsoleError } from '@/common/testUtil';
 
 describe('describeLog', () => {
@@ -77,6 +77,20 @@ describe('describeLog', () => {
       flushLog();
       expect(doesLogInclude('anything')).toBe(false);
       expect(doesLogInclude('')).toBe(false);
+    });
+  });
+
+  describe('setStatus()', () => {
+    it('calls status callback', () => {
+      let message:string, completed:number, total:number;
+      function _onStatus(m:string, c:number, t:number) {
+        message = m; completed = c; total = t;
+      }
+      setOnStatusCallback(_onStatus);
+      setStatus('banana', 4, 5);
+      expect(message!).toBe('banana');
+      expect(completed!).toBe(4);
+      expect(total!).toBe(5);
     });
   });
 });

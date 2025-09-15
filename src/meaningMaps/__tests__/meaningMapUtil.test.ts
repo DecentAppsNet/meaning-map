@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
-import { generateMeaningMapFromClassifications, matchMeaning, TestExports } from '../meaningMapUtil';
+import { generateMeaningMapFromClassifications, TestExports } from '../meaningMapUtil';
 import { exampleClassifications } from './data/classificationsTestData';
 import MeaningMap from '@/impexp/types/MeaningMap';
-import MeaningMatch from '../types/MeaningMatch';
-import { unreplaceWithPlaceholders } from '@/replacement/replaceUtil';
 
 describe('meaningMapUtil', () => {
   describe('_generateWordUsageMap()', () => {
@@ -111,40 +109,10 @@ describe('meaningMapUtil', () => {
           { followingWords: ['ITEMS2'], meaningId: '1' }
         ],
         should: [ { followingWords: [], meaningId: '1.1' } ],
-        need: [ { followingWords: [], meaningId: '1.1' } ]
+        need: [ { followingWords: [], meaningId: '1.1' } ],
+        even: [ { followingWords: [], meaningId: '1.2'} ]
       };
       expect(meaningMap).toEqual(expected);
-    });
-  });
-
-  describe('matchMeaning()', () => {
-    let meaningMap:MeaningMap, originalMeaningMap:MeaningMap;
-    let classifications:MeaningClassifications;
-
-    beforeAll(() => {
-      classifications = JSON.parse(JSON.stringify(exampleClassifications));
-      originalMeaningMap = generateMeaningMapFromClassifications(classifications);
-      meaningMap = JSON.parse(JSON.stringify(originalMeaningMap));
-    });
-
-    beforeEach(() => {
-      expect(meaningMap).toEqual(originalMeaningMap);
-      expect(classifications).toEqual(exampleClassifications);
-    });
-
-    it('matches all utterances in classification to same meaning ID using meaning map', async () => {
-      const meaningIds = Object.keys(classifications);
-      for(let meaningIdI = 0; meaningIdI < meaningIds.length; ++meaningIdI) {
-        const meaningId = meaningIds[meaningIdI];
-        const utterances = classifications[meaningId];
-        expect(utterances && utterances.length > 0);
-        for (let utteranceI = 0; utteranceI < utterances.length; ++utteranceI) {
-          const utterance = unreplaceWithPlaceholders(utterances[utteranceI]);
-          const match:MeaningMatch|null = await matchMeaning(utterance, meaningMap);
-          expect(match).not.toBeNull();
-          expect(match!.meaningId).toEqual(meaningId);
-        }
-      }
     });
   });
 });

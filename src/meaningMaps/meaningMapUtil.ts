@@ -1,18 +1,16 @@
-import { isPlainUtterance, isValidUtterance, utteranceToWords } from "@/classification/utteranceUtil";
+import { isValidUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 import MeaningClassifications from "@/impexp/types/MeaningClassifications";
 import MeaningMap from "@/impexp/types/MeaningMap";
-import { assert, botch } from '@/common/assertUtil';
+import { assert, assertNonNullable, botch } from '@/common/assertUtil';
 import MeaningMapEntry from "@/impexp/types/MeaningMapEntry";
 import { concatMatchWords, createFirstTryCombination, findNextTryCombination } from "./tryCombinationUtil";
 import WordUsageMap from "./types/WordUsageMap";
 import TryCombination from "./types/TryCombination";
-import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
-import MeaningMatch from "./types/MeaningMatch";
-import ReplacedValues from "@/replacement/types/ReplacedValues";
-
-// TODO anything you assert in this module that points to invalid data in classifications, needs to be validated in the classifications importer.
-// Best way is probably to write an explicit validateClassifications() function and call it from the importer.
-
+import { importMeaningClassifications } from "@/impexp/meaningClassificationsImporter";
+import { endSection, flushLog, log, setStatus, startSection } from "@/common/describeLog";
+import { exportMeaningMap } from "@/impexp/meaningMapExporter";
+import { match } from "assert";
+import { matchMeaningForReplacedUtterance } from "./matchUtil";
 
 function _generateWordUsageMap(classifications:MeaningClassifications):WordUsageMap {
   const wordUsageMap:WordUsageMap = {};
@@ -62,91 +60,118 @@ function _doMatchWordsMatchOtherMeanings(matchWords:string[], classifications:Me
   });
 }
 
-function _findMinimalMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, classifications:MeaningClassifications):string[] {
+// Find the smallest set of words that exclusively match an utterance to one meaning ID.
+function _findMinimalExclusiveMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, classifications:MeaningClassifications):string[]|null {
   assert(isValidUtterance(utterance));
   let tryCombination:TryCombination|null = createFirstTryCombination(utterance, wordUsageMap);
   while(tryCombination) {
     const matchWords = concatMatchWords(tryCombination);
     if (!_doMatchWordsMatchOtherMeanings(matchWords, classifications, meaningId)) return matchWords;
     tryCombination = findNextTryCombination(tryCombination);
-  /* v8 ignore start */
   }
-  botch();
-  /* v8 ignore end */
+  return null; // No match words found that uniquely identify this utterance.
+}
+
+function _addMatchRuleToMeaningMap(matchWords:string[], meaningId:string, meaningMap:MeaningMap) {
+  assert(matchWords.length > 0);
+  log(`Found match words: ${matchWords.map(w => `"${w}"`).join(', ')}`);
+  const firstWord = matchWords[0];
+  const meaningMapEntry:MeaningMapEntry = {followingWords:matchWords.slice(1), meaningId};
+  const entries = meaningMap[firstWord] || [];
+  entries.push(meaningMapEntry);
+  meaningMap[firstWord] = entries;
+}
+
+// Find the smallest set of words that score highest to match an utterance to one meaning ID.
+function _findMinimalScoreMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, meaningMap:MeaningMap):string[]|null {
+  assert(isValidUtterance(utterance));
+
+  // Check if one of the other rules in the meaning map already matches this utterance.
+  const match = matchMeaningForReplacedUtterance(utterance, meaningMap);
+  if (match && match.meaningId === meaningId) return [];
+
+  let tryCombination:TryCombination|null = createFirstTryCombination(utterance, wordUsageMap);
+  while(tryCombination) {
+    const matchWords = concatMatchWords(tryCombination);
+    const tryUtterance = matchWords.join(' ');
+    const match = matchMeaningForReplacedUtterance(tryUtterance, meaningMap);
+ 
+    if (!match) return matchWords; // Words don't match against any existing rule.
+    if (match.meaningId === meaningId) return []; // Words match against an existing rule that has same meaning ID.
+
+    tryCombination = findNextTryCombination(tryCombination);
+  }
+  return null; // No match words found that uniquely match this utterance by score.
+}
+
+type PostponedUtterance = {
+  utterance:string,
+  meaningId:string
+};
+
+function _countUtterances(meaningIds:string[], classifications:MeaningClassifications):number {
+  let total = 0;
+  meaningIds.forEach(meaningId => total += classifications[meaningId].length);
+  return total;
 }
 
 export function generateMeaningMapFromClassifications(classifications:MeaningClassifications):MeaningMap {
   const wordUsageMap = _generateWordUsageMap(classifications);
   const meaningMap:MeaningMap = {};
   const meaningIds:string[] = Object.keys(classifications);
-  meaningIds.forEach(meaningId => {
+  const postponed:PostponedUtterance[] = [];
+
+  let addedUtteranceCount = 0;
+  const utteranceCount = _countUtterances(meaningIds, classifications);
+  meaningIds.forEach((meaningId) => {
+    setStatus('generating meaning map', addedUtteranceCount, utteranceCount);
+    startSection(`Processing meaning ID ${meaningId}`);
     const utterances = classifications[meaningId];
     utterances.forEach(utterance => {
+      log(`Finding match words for utterance "${utterance}"`);
       assert(isValidUtterance(utterance));
-      const matchWords = _findMinimalMatchWordsForUtterance(utterance, wordUsageMap, meaningId, classifications);
-      assert(matchWords.length > 0);
-      const firstWord = matchWords[0];
-      const meaningMapEntry:MeaningMapEntry = {followingWords:matchWords.slice(1), meaningId};
-      const entries = meaningMap[firstWord] || [];
-      entries.push(meaningMapEntry);
-      meaningMap[firstWord] = entries;
+      const matchWords = _findMinimalExclusiveMatchWordsForUtterance(utterance, wordUsageMap, meaningId, classifications);
+      if (!matchWords) {
+        log(`Postponed utterance "${utterance}" since no unique match words found`);
+        postponed.push({utterance, meaningId});
+      } else {
+        _addMatchRuleToMeaningMap(matchWords, meaningId, meaningMap);
+        ++addedUtteranceCount;
+      }
     });
+    endSection();
   });
 
+  if (postponed.length) {
+    startSection(`Processing ${postponed.length} postponed utterances`);
+    postponed.forEach((pu, puI) => {
+      setStatus('generating meaning map', addedUtteranceCount, utteranceCount);
+      const { utterance, meaningId } = pu;
+      log(`Finding match words for postponed utterance "${utterance}"`);
+      const matchWords = _findMinimalScoreMatchWordsForUtterance(utterance, wordUsageMap, meaningId, meaningMap);
+      if (!matchWords) {
+        const text = `Failed to find unique match words for "${utterance}" within meaning map. Not adding matching rule.`;
+        log(text);
+        console.warn(text);
+      } else {
+        if (matchWords.length) _addMatchRuleToMeaningMap(matchWords, meaningId, meaningMap);
+        ++addedUtteranceCount;
+      }
+    });
+    endSection();
+  }
   return meaningMap;
 }
 
-type ActiveMatch = {
-  remainingWords:string[],
-  meaningId:string
+/* v8 ignore start */
+export async function createMeaningMap(classificationFilepath:string, outputFilepath:string):Promise<MeaningMap> {
+  log(`importing classifications from ${classificationFilepath}`);
+  const classifications:MeaningClassifications = await importMeaningClassifications(classificationFilepath);
+  const meaningMap = generateMeaningMapFromClassifications(classifications);
+  log(`exporting meaning map to ${outputFilepath}`);
+  await exportMeaningMap(meaningMap, outputFilepath);
 }
-
-function _addActiveMatchesForFirstWord(firstWord:string, remainingEvalCount:number, meaningMap:MeaningMap, activeMatches:ActiveMatch[]):string|null {
-  const entries = meaningMap[firstWord];
-  if (!entries) return null;
-  for(let entryI = 0; entryI < entries.length; ++entryI) {
-    const entry = entries[entryI];
-    if (!entry.followingWords.length) return entry.meaningId; // Match complete! Coupled to the knowledge that caller doesn't care about active matches after one is found.
-    if (entry.followingWords.length > remainingEvalCount) continue; // Impossible to match since it needs more words than are left for me to evaluate.
-    activeMatches.push({remainingWords:entry.followingWords, meaningId:entry.meaningId});
-  }
-  return null;
-}
-
-function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatches:ActiveMatch[]):string|null {
-  for(let i = 0; i < activeMatches.length; ++i) {
-    if (activeMatches[i].remainingWords[0] === word) {
-      const activeMatch = activeMatches[i];
-      activeMatch.remainingWords.shift();
-      if (activeMatch.remainingWords.length === 0) return activeMatch.meaningId; // Match complete! Coupled to the knowledge that caller doesn't care about updating matches after one is found.
-    }
-  }
-  // Cull matches that are impossible because not enough words remain to match them.
-  activeMatches = activeMatches.filter(am => am.remainingWords.length <= remainingEvalCount);
-  return null; // No match found yet.
-}
-
-export function matchMeaningForReplacedUtterance(replacedUtterance:string, meaningMap:MeaningMap, replacedValues:ReplacedValues):MeaningMatch|null {
-  assert(isValidUtterance(replacedUtterance));
-  const words = utteranceToWords(replacedUtterance);
-  const activeMatches:ActiveMatch[] = [];
-  let remainingEvalCount = words.length, meaningId:string|null = null;
-  for(let wordI = 0; wordI < words.length; ++wordI) {
-    const word = words[wordI];
-    meaningId = _updateActiveMatches(word, remainingEvalCount, activeMatches);
-    if (meaningId) break;
-    meaningId = _addActiveMatchesForFirstWord(word, --remainingEvalCount, meaningMap, activeMatches);
-    if (meaningId) break;
-  }
-  if (!meaningId) return null; // No match found.
-  return { meaningId, paramValues:replacedValues };
-}
-
-export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
-  assert(isPlainUtterance(plainUtterance));
-  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance);
-  return matchMeaningForReplacedUtterance(replacedUtterance, meaningMap, replacedValues);
-}
+/* v8 ignore end */
 
 export const TestExports = {
   _generateWordUsageMap,

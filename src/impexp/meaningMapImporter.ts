@@ -1,25 +1,3 @@
-/* example *file* format.
-{
-    "add":[
-        ":1",
-        "ITEMS:1.1",
-        "to NUMBER:1.2",
-        "ITEMS to NUMBER:1.3"
-    ],
-    "adding":[
-        ":1",
-        "ITEMS:1.1",
-        "to NUMBER:1.2",
-        "ITEMS to NUMBER:1.3"
-    ],
-    "where":[
-        "is ITEMS:2.1",
-        "are ITEMS:2.1"
-        "put ITEMS:2.1"
-    ]
-}
-*/
-
 import { readTextFile } from "@/common/fileUtil";
 import MeaningMap from "./types/MeaningMap";
 import { normalizeUtterance, utteranceToWords } from "@/classification/utteranceUtil";

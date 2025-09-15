@@ -36,6 +36,10 @@ export function escapeRegexCharacters(text:string):string {
   return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+export function hasNonPosixFilepathChars(filepath:string):boolean {
+  return /[^a-zA-Z0-9._/-]/.test(filepath);
+}
+
 export function createNonGlobalRegex(regex:RegExp):RegExp {
   if (!regex.global) return regex; // No change needed, so return unmodified regex.
   const flags = regex.flags.replace('g', '');

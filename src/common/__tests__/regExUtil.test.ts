@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNonGlobalRegex, escapeRegexCharacters, extractAllCapsWords, findNonWhitespace, findWhitespace, isWhiteSpaceChar, isDigitChar } from '../regExUtil';
+import { createNonGlobalRegex, escapeRegexCharacters, extractAllCapsWords, findNonWhitespace, findWhitespace, isWhiteSpaceChar, isDigitChar, hasNonPosixFilepathChars } from '../regExUtil';
 
 describe('regExUtil', () => {
   describe('escapeRegexCharacters()', () => {
@@ -107,6 +107,26 @@ describe('regExUtil', () => {
       expect(findNonWhitespace('   abc')).toBe(3);
       expect(findNonWhitespace('abc')).toBe(0);
       expect(findNonWhitespace('   ')).toBe(-1);
+    });
+  });
+
+  describe('hasNonPosixFilepathChars()', () => {
+    it('returns false for empty and simple posix filepaths', () => {
+      expect(hasNonPosixFilepathChars('')).toBe(false);
+      expect(hasNonPosixFilepathChars('abc')).toBe(false);
+      expect(hasNonPosixFilepathChars('dir/file.txt')).toBe(false);
+      expect(hasNonPosixFilepathChars('./file')).toBe(false);
+      expect(hasNonPosixFilepathChars('../file')).toBe(false);
+      expect(hasNonPosixFilepathChars('file-name_1.2')).toBe(false);
+    });
+
+    it('returns true when path contains non-posix characters', () => {
+      expect(hasNonPosixFilepathChars('file name')).toBe(true);
+      expect(hasNonPosixFilepathChars('dir\\file')).toBe(true);
+      expect(hasNonPosixFilepathChars('file:name')).toBe(true);
+      expect(hasNonPosixFilepathChars('file*')).toBe(true);
+      expect(hasNonPosixFilepathChars('file?txt')).toBe(true);
+      expect(hasNonPosixFilepathChars('~file')).toBe(true);
     });
   });
 });

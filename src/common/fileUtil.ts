@@ -4,10 +4,26 @@ import path from 'path';
 /* v8 ignore start */
 
 export async function ensureDir(dirPath:string):Promise<void> {
+  const dir = path.dirname(dirPath); // In case dirPath is a file, ensure its parent dir.
+  await fs.mkdir(dir, { recursive: true });
+}
+
+export async function pathExists(filePath:string):Promise<boolean> {
+  const dir = path.dirname(filePath);
   try {
-    await fs.mkdir(dirPath, { recursive: true });
+    await fs.access(dir);
+    return true;
   } catch (err) {
-    // ignore
+    return false;
+  }
+}
+
+export async function fileExists(filePath:string):Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch (err) {
+    return false;
   }
 }
 
