@@ -1,7 +1,7 @@
 import { isParam, isUtteranceNormalized, utteranceToWords } from '@/classification/utteranceUtil';
 import { assert, botch } from '@/common/assertUtil';
 import TryCombination from './types/TryCombination';
-import WordUsageMap from './types/WordUsageMap';
+import WordUsageMap from '../classification/types/WordUsageMap';
 
 function _countOns(enablements:boolean[]):number {
   let onCount = 0;

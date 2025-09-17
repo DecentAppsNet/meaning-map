@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import { concatMatchWords, createFirstTryCombination, findNextTryCombination } from "../tryCombinationUtil";
-import WordUsageMap, { duplicateWordUsageMap } from '../types/WordUsageMap';
+import WordUsageMap, { duplicateWordUsageMap } from '../../classification/types/WordUsageMap';
 import TryCombination from '../types/TryCombination';
 
 // Use this one wordUsageMap for all tests. All words found in utterances

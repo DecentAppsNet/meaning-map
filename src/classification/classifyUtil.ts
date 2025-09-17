@@ -11,6 +11,7 @@ import { isDigitChar } from "@/common/regExUtil";
 import { findParamsInUtterance, isUtteranceNormalized } from "./utteranceUtil";
 import { endSection, log, setStatus, startSection } from "@/common/describeLog";
 import { makeUtteranceReplacements } from '@/replacement/replaceUtil';
+import { doMatchWordsMatchUtterance } from "@/meaningMaps/matchUtil";
 
 function _findTopLevelMeaningIds(meaningIndex:MeaningIndex):string[] {
   return Object.keys(meaningIndex).filter(id => id !== UNCLASSIFIED_MEANING_ID && id.indexOf('.') === -1);
@@ -252,6 +253,22 @@ export async function createMeaningClassification(corpusFilepath:string, meaning
     if (!classifications[meaningId].includes(replacedUtterance)) classifications[meaningId].push(replacedUtterance);
     exportMeaningClassifications(classifications, classificationFilepath, meaningIndex); // Exports multiple times because it can be a long-running process.
   }
+}
+
+export function countUtterances(meaningIds:string[], classifications:MeaningClassifications):number {
+  let total = 0;
+  meaningIds.forEach(meaningId => total += classifications[meaningId].length);
+  return total;
+}
+
+export function doMatchWordsMatchOtherMeanings(matchWords:string[], classifications:MeaningClassifications, excludeMeaningId:string):boolean {
+  const meaningIds = Object.keys(classifications).filter(meaningId => meaningId !== excludeMeaningId);
+  return meaningIds.some(meaningId => {
+    const utterances = classifications[meaningId];
+    return utterances.some(utterance => {
+      return doMatchWordsMatchUtterance(matchWords, utterance);
+    });
+  });
 }
 
 export const TestExports = {

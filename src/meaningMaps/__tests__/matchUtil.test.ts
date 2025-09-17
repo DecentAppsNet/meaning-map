@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import { unreplaceWithPlaceholders } from "@/replacement/replaceUtil";
 import MeaningMatch from "../types/MeaningMatch";
-import { matchMeaning } from "../matchUtil";
+import { doMatchWordsMatchUtterance, matchMeaning } from "../matchUtil";
 import { exampleClassifications } from "./data/classificationsTestData";
 import { generateMeaningMapFromClassifications } from "../meaningMapUtil";
 import MeaningClassifications, { duplicateMeaningClassifications } from "@/impexp/types/MeaningClassifications";
@@ -44,6 +44,52 @@ describe('matchUtil', () => {
       meaningMap2['when'] = [ { followingWords: ['are', 'you', 'happy'], meaningId: '0' } ];
       const match = await matchMeaning('when', meaningMap2);
       expect(match).toBeNull();
+    });
+  });
+
+  describe('doMatchWordsMatchUtterance()', () => {
+    it('matches a single word in single-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['hello'], 'hello')).toBe(true);
+    });
+
+    it('does not match a single word not present in single-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['foo'], 'bar')).toBe(false);
+    });
+
+    it('matches single word at beginning of multi-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['hello'], 'hello world')).toBe(true);
+    });
+
+    it('matches single word at end of multi-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['world'], 'hello world')).toBe(true);
+    });
+
+    it('matches single word in middle of multi-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['there'], 'hello there world')).toBe(true);
+    });
+
+    it('does not match single word not present in multi-word utterance', () => {
+      expect(doMatchWordsMatchUtterance(['missing'], 'a b c')).toBe(false);
+    });
+
+    it('matches two adjacent match words', () => {
+      expect(doMatchWordsMatchUtterance(['hello', 'world'], 'hello world')).toBe(true);
+    });
+
+    it('matches two match words with a gap between them', () => {
+      expect(doMatchWordsMatchUtterance(['hello', 'world'], 'hello there world')).toBe(true);
+    });
+
+    it('does not match when only one of two match words is present', () => {
+      expect(doMatchWordsMatchUtterance(['hello', 'missing'], 'hello world')).toBe(false);
+    });
+
+    it('does not match when two match words are present but out of sequence (adjacent)', () => {
+      expect(doMatchWordsMatchUtterance(['world', 'hello'], 'hello world')).toBe(false);
+    });
+
+    it('does not match when two match words are present but out of sequence (with gap)', () => {
+      expect(doMatchWordsMatchUtterance(['world', 'hello'], 'hello there world')).toBe(false);
     });
   });
 });

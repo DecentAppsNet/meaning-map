@@ -75,3 +75,19 @@ export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap)
   const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance);
   return matchMeaningForReplacedUtterance(replacedUtterance, meaningMap, replacedValues);
 }
+
+export function doMatchWordsMatchUtterance(matchWords:string[], utterance:string):boolean {
+  assert(isValidUtterance(utterance));
+  assert(matchWords.length > 0);
+  const words = utteranceToWords(utterance);
+  let matchFromI = 0;
+  for(let matchWordI = 0; matchWordI < matchWords.length; ++matchWordI) {
+    const matchWord = matchWords[matchWordI];
+    for(; matchFromI < words.length; ++matchFromI) {
+      if (words[matchFromI] === matchWord) break;
+    }
+    if (matchFromI === words.length) return false; // The current match word couldn't be found in utterance.
+    ++matchFromI; // Found current match word. Next match word should be looked for after this one.
+  }
+  return true; // All match words found.
+}
