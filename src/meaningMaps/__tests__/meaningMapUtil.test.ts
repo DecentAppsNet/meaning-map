@@ -18,10 +18,10 @@ describe('meaningMapUtil', () => {
       expect(classifications).toEqual(exampleClassifications);
     });
 
+    const DISPLAY_DESCRIBE_LOG = false;
     it('generates meaning map from populated classifications', () => {
       const meaningMap:MeaningMap = generateMeaningMapFromClassifications(classifications);
-      // console.log(JSON.stringify(meaningMap,undefined,2));
-      console.log(flushLog());
+      if (DISPLAY_DESCRIBE_LOG) console.log(flushLog());
       expect(meaningMap).toEqual(exampleMeaningMap);
     });
   });

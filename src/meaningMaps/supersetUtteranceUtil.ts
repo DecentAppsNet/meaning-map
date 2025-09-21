@@ -48,6 +48,10 @@ unmaintainable, I need to write code based on premises that will be known to alw
   unique and a superset must have more words than its subset.
 * therefore, it should always be possible to devise a set of match words for a Superset
   Utterance that distinguishes it from any combination of Subset Utterances.
+* Subset to Superset loops are impossible (A -> B, B -> C, C -> A) because a superset 
+  contains ALL words in the subset, not just a portion. So no superset can be the 
+  subset of an earlier subset in the chain, even transitively. If A -> B and B -> C, C must 
+  contain all the words in A, so it can only be a superset of A and never a subset.
   
 */
 import { assert, assertNonNullable } from "@/common/assertUtil"
@@ -171,7 +175,7 @@ function _distinguishSuperset(superset:Superset, wordUsageMap:WordUsageMap, mean
 function _addRuleForSubset(subset:Subset, classifications:MeaningClassifications, distinguishedSupersetUtterances:Set<string>, wordUsageMap:WordUsageMap, meaningMap:MeaningMap) {
   const { utterance, meaningId } = subset;
   assert(isValidUtterance(utterance));
-  assert(subset.supersetUtterances.every(distinguishedSupersetUtterances.has), `not all supersets of subset "${utterance}" were distinguished.`);
+  assert(subset.supersetUtterances.every(su => distinguishedSupersetUtterances.has(su)), `not all supersets of subset "${utterance}" were distinguished.`);
   let tryCombination:TryCombination|null = createFirstTryCombination(utterance, wordUsageMap);
   let matchWords:string[] = [];
   while(tryCombination) {
@@ -187,7 +191,8 @@ function _addRuleForSubset(subset:Subset, classifications:MeaningClassifications
 function _addRulesForSubsets(subsets:Subset[], classifications:MeaningClassifications, distinguishedSupersetUtterances:Set<string>, wordUsageMap:WordUsageMap, meaningMap:MeaningMap) {
   for(let i = 0; i < subsets.length; ++i) {
     const subset = subsets[i];
-    if (!subset.supersetUtterances.every(distinguishedSupersetUtterances.has)) continue; // Need to distinguish at least one superset before rules can be added.
+    console.log({subset});
+    if (subset.supersetUtterances.some(su => !distinguishedSupersetUtterances.has(su))) continue; // Need to distinguish at least one superset before rules can be added.
     _addRuleForSubset(subset, classifications, distinguishedSupersetUtterances, wordUsageMap, meaningMap);    
   }
 }
@@ -196,7 +201,28 @@ function _findSubsetsForUtterances(utterances:string[], subsets:Subset[]):Subset
   return subsets.filter(s => utterances.includes(s.utterance));
 }
 
-export function addMatchWordsToSupersetUtterances(subsets:Subset[], classifications:MeaningClassifications, wordUsageMap:WordUsageMap, meaningMap:MeaningMap) {
+/**
+ * Resolve subset utterances by distinguishing their supersets first and then adding rules for the subsets.
+ *
+ * For a collection of `subsets` that could not initially receive match rules (because every possible
+ * rule for a subset also matched one or more superset utterances), this function iteratively processes
+ * the related supersets, ensures each superset's rule gets distinguishing match words, and then adds rules
+ * for any subset whose supersets have been distinguished. The function mutates `meaningMap` by
+ * adding/updating match rules as required.
+ *
+ * Preconditions:
+ * - Each `Subset.utterance` should appear in `classifications`.
+ * - The provided `meaningMap` should be a valid meaning map appropriate for the classification set.
+ *
+ * Side effects:
+ * - `meaningMap` is modified (new match rules may be added and superset rules may be updated).
+ *
+ * @param subsets - Array of subset descriptors that need rules added once their supersets are distinguished.
+ * @param classifications - Map of meaningId -> utterances used to locate subsets/supersets.
+ * @param wordUsageMap - Word frequency/usage map used to pick distinguishing words for supersets.
+ * @param meaningMap - The meaning map to update; this function mutates it in-place.
+ */
+export function resolveSubsets(subsets:Subset[], classifications:MeaningClassifications, wordUsageMap:WordUsageMap, meaningMap:MeaningMap) {
   const supersets = _subsetsToSupersets(subsets, meaningMap);
   const supersetQueue:Superset[] = [...supersets];
   const distinguishedSupersetUtterances:Set<string> = new Set<string>;
