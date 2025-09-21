@@ -8,7 +8,7 @@ describe('meaningMapImporter', () => {
       expect(out).toEqual({});
     });
 
-    it('parses a single entry for a single first word', () => {
+    it('parses a single rule for a single first word', () => {
       const json = '{"add": ["ITEMS:1.1"]}';
       const expected = {
         add: [
@@ -19,7 +19,7 @@ describe('meaningMapImporter', () => {
       expect(out).toEqual(expected);
     });
 
-    it('parses multiple entries under a single first word including empty following words', () => {
+    it('parses multiple rules under a single first word including empty following words', () => {
       const json = '{"add": [":1", "ITEMS:1.1", "to NUMBER:1.2"]}';
       const expected = {
         add: [
@@ -56,17 +56,17 @@ describe('meaningMapImporter', () => {
       expect(() => parseMeaningMap(json)).toThrow(/must be an array/);
     });
 
-    it('throws when an entry is not a string', () => {
+    it('throws when a rule is not a string', () => {
       const json = '{"add": [123]}';
       expect(() => parseMeaningMap(json)).toThrow(/must be a string/);
     });
 
-    it('throws when an entry is missing a colon separator', () => {
+    it('throws when a rule is missing a colon separator', () => {
       const json = '{"add": ["ITEMS1.1"]}';
       expect(() => parseMeaningMap(json)).toThrow(/missing ':'/);
     });
 
-    it('throws when an entry has an empty meaningId', () => {
+    it('throws when a rule has an empty meaningId', () => {
       const json = '{"add": ["ITEMS:"]}';
       expect(() => parseMeaningMap(json)).toThrow(/empty meaningId/);
     });

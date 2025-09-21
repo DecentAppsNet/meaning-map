@@ -4,10 +4,11 @@ import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import MeaningMatch from "./types/MeaningMatch";
 import ReplacedValues from "@/replacement/types/ReplacedValues";
 import MeaningMap from '@/impexp/types/MeaningMap';
+import RuleReference from './types/RuleReference';
 
 type ActiveMatch = {
   remainingWords:string[],
-  meaningId:string,
+  ruleReference:RuleReference,
   isMatched:boolean,
   matchScore:number, // Higher is better.
 }
@@ -16,16 +17,26 @@ const MATCH_WORD_SCORE_WEIGHT = 5;
 const GAP_WORD_SCORE_WEIGHT = 1;
 
 function _addActiveMatchesForFirstWord(firstWord:string, remainingEvalCount:number, meaningMap:MeaningMap, activeMatches:ActiveMatch[]) {
-  const entries = meaningMap[firstWord];
-  if (!entries) return null;
-  for(let entryI = 0; entryI < entries.length; ++entryI) {
-    const entry = entries[entryI];
-    if (!entry.followingWords.length) { 
-      activeMatches.push({remainingWords:[], meaningId:entry.meaningId, matchScore:MATCH_WORD_SCORE_WEIGHT, isMatched:true});
+  const rules = meaningMap[firstWord];
+  if (!rules) return null;
+  for(let ruleI = 0; ruleI < rules.length; ++ruleI) {
+    const rule = rules[ruleI];
+    if (!rule.followingWords.length) { 
+      activeMatches.push({
+        remainingWords:[],  
+        ruleReference:{firstWord, rule}, 
+        matchScore:MATCH_WORD_SCORE_WEIGHT, 
+        isMatched:true
+      });
       continue;
     }
-    if (entry.followingWords.length > remainingEvalCount) continue; // Impossible to match since it needs more words than are left for me to evaluate.
-    activeMatches.push({remainingWords:[...entry.followingWords], meaningId:entry.meaningId, matchScore:MATCH_WORD_SCORE_WEIGHT, isMatched:false});
+    if (rule.followingWords.length > remainingEvalCount) continue; // Impossible to match since it needs more words than are left for me to evaluate.
+    activeMatches.push({
+      remainingWords:[...rule.followingWords], 
+      ruleReference:{firstWord, rule}, 
+      matchScore:MATCH_WORD_SCORE_WEIGHT, 
+      isMatched:false
+    });
   }
 }
 
@@ -46,13 +57,16 @@ function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatc
 }
 
 const ANYTHING_BEATS = -999999;
-function _findBestMeaningMatch(activeMatches:ActiveMatch[]):string|null {
-  let bestScore = ANYTHING_BEATS, bestMeaningId:string|null = null;
+function _findBestMeaningMatch(activeMatches:ActiveMatch[]):ActiveMatch|null {
+  let bestScore = ANYTHING_BEATS, bestActiveMatch:ActiveMatch|null = null;
   for(let i = 0; i < activeMatches.length; ++i) {
     const activeMatch = activeMatches[i];
-    if (activeMatch.isMatched && activeMatch.matchScore > bestScore) bestMeaningId = activeMatch.meaningId;
+    if (activeMatch.isMatched && activeMatch.matchScore > bestScore) {
+      bestScore = activeMatch.matchScore;
+      bestActiveMatch = activeMatch;
+    }
   }
-  return bestMeaningId;
+  return bestActiveMatch;
 }
 
 export function matchMeaningForReplacedUtterance(replacedUtterance:string, meaningMap:MeaningMap, replacedValues:ReplacedValues = {}):MeaningMatch|null {
@@ -65,9 +79,9 @@ export function matchMeaningForReplacedUtterance(replacedUtterance:string, meani
     _updateActiveMatches(word, remainingEvalCount, activeMatches);
     _addActiveMatchesForFirstWord(word, --remainingEvalCount, meaningMap, activeMatches);
   }
-  let meaningId = _findBestMeaningMatch(activeMatches);
-  if (!meaningId) return null; // No match found.
-  return { meaningId, paramValues:replacedValues };
+  const bestMatch = _findBestMeaningMatch(activeMatches);
+  if (!bestMatch) return null; // No match found.
+  return { meaningId:bestMatch.ruleReference.rule.meaningId, ruleReference:bestMatch.ruleReference, paramValues:replacedValues };
 }
 
 export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {

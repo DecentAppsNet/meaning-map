@@ -2,7 +2,6 @@ import { isValidUtterance } from "@/classification/utteranceUtil";
 import MeaningClassifications from "@/impexp/types/MeaningClassifications";
 import MeaningMap from "@/impexp/types/MeaningMap";
 import { assert } from '@/common/assertUtil';
-import MeaningMapEntry, { areMeaningMapEntriesEqual } from "@/impexp/types/MeaningMapEntry";
 import { concatMatchWords, createFirstTryCombination, findNextTryCombination } from "./tryCombinationUtil";
 import WordUsageMap from "../classification/types/WordUsageMap";
 import TryCombination from "./types/TryCombination";
@@ -12,6 +11,7 @@ import { exportMeaningMap } from "@/impexp/meaningMapExporter";
 import { matchMeaningForReplacedUtterance } from "./matchUtil";
 import { generateWordUsageMap } from "@/classification/wordUsageUtil";
 import { countUtterances, doMatchWordsMatchOtherMeanings } from "@/classification/classifyUtil";
+import { addRule } from "./ruleOperationsUtil";
 
 // Find the smallest set of words that exclusively match an utterance to one meaning ID.
 function _findMinimalExclusiveMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, classifications:MeaningClassifications):string[]|null {
@@ -23,17 +23,6 @@ function _findMinimalExclusiveMatchWordsForUtterance(utterance:string, wordUsage
     tryCombination = findNextTryCombination(tryCombination);
   }
   return null; // No match words found that uniquely identify this utterance.
-}
-
-function _addMatchRuleToMeaningMap(matchWords:string[], meaningId:string, meaningMap:MeaningMap) {
-  assert(matchWords.length > 0);
-  log(`Found match words: ${matchWords.map(w => `"${w}"`).join(', ')}`);
-  const firstWord = matchWords[0];
-  const meaningMapEntry:MeaningMapEntry = {followingWords:matchWords.slice(1), meaningId};
-  const entries = meaningMap[firstWord] || [];
-  if (entries.some(e => areMeaningMapEntriesEqual(e, meaningMapEntry))) return; // Don't add duplicate entry.
-  entries.push(meaningMapEntry);
-  meaningMap[firstWord] = entries;
 }
 
 // Find the smallest set of words that score highest to match an utterance to one meaning ID. TODO this is wrong alg.
@@ -83,7 +72,7 @@ export function generateMeaningMapFromClassifications(classifications:MeaningCla
         log(`Postponed utterance "${utterance}" since no unique match words found`);
         postponed.push({utterance, meaningId});
       } else {
-        _addMatchRuleToMeaningMap(matchWords, meaningId, meaningMap);
+        addRule(matchWords, meaningId, meaningMap);
         ++addedUtteranceCount;
       }
     });
@@ -102,7 +91,7 @@ export function generateMeaningMapFromClassifications(classifications:MeaningCla
         log(text);
         console.warn(text);
       } else {
-        if (matchWords.length) _addMatchRuleToMeaningMap(matchWords, meaningId, meaningMap);
+        if (matchWords.length) addRule(matchWords, meaningId, meaningMap);
         ++addedUtteranceCount;
       }
     });

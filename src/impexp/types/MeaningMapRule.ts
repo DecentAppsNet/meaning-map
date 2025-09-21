@@ -1,13 +1,13 @@
-type MeaningMapEntry = {
+type MeaningMapRule = {
   followingWords:string[],
   meaningId:string
 }
 
-export function duplicateMeaningMapEntry(entry:MeaningMapEntry):MeaningMapEntry {
-  return { followingWords:[...entry.followingWords], meaningId:entry.meaningId };
+export function duplicateMeaningMapRule(rule:MeaningMapRule):MeaningMapRule {
+  return { followingWords:[...rule.followingWords], meaningId:rule.meaningId };
 }
 
-export function areMeaningMapEntriesEqual(a:MeaningMapEntry, b:MeaningMapEntry):boolean {
+export function areMeaningMapRulesEqual(a:MeaningMapRule, b:MeaningMapRule):boolean {
   if (a.meaningId !== b.meaningId) return false;
   if (a.followingWords.length !== b.followingWords.length) return false;
   for(let i = 0; i < a.followingWords.length; ++i) {
@@ -16,4 +16,4 @@ export function areMeaningMapEntriesEqual(a:MeaningMapEntry, b:MeaningMapEntry):
   return true;
 }
 
-export default MeaningMapEntry;
+export default MeaningMapRule;

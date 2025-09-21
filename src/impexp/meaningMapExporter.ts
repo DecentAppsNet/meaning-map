@@ -1,20 +1,20 @@
 import { writeJsonFile } from "@/common/fileUtil";
 import MeaningMap from "./types/MeaningMap";
-import MeaningMapEntry from "./types/MeaningMapEntry";
+import MeaningMapRule from "./types/MeaningMapRule";
 
 type MeaningMapFileFormat = {
   [firstWord:string]:string[]
 }
 
-function _entryToFormat(entry:MeaningMapEntry):string {
-  return `${entry.followingWords.join(' ').trim()}:${entry.meaningId}`;
+function _ruleToFormat(rule:MeaningMapRule):string {
+  return `${rule.followingWords.join(' ').trim()}:${rule.meaningId}`;
 }
 
 export function meaningMapToText(meaningMap:MeaningMap):string {
   const firstWords:string[] = Object.keys(meaningMap);
   const format:MeaningMapFileFormat = {};
   firstWords.forEach(firstWord => {
-    format[firstWord] = meaningMap[firstWord].map(_entryToFormat);
+    format[firstWord] = meaningMap[firstWord].map(_ruleToFormat);
   });
   return JSON.stringify(format, undefined, 2);
 }

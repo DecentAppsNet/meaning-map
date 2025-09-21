@@ -1,13 +1,13 @@
-import MeaningMapEntry, { duplicateMeaningMapEntry } from "./MeaningMapEntry";
+import MeaningMapRule, { duplicateMeaningMapRule } from "./MeaningMapRule";
 
 type MeaningMap = {
-  [firstWord:string]:MeaningMapEntry[]
+  [firstWord:string]:MeaningMapRule[]
 }
 
 export function duplicateMeaningMap(meaningMap:MeaningMap):MeaningMap {
   const result:MeaningMap = {};
   for(const firstWord in meaningMap) {
-    result[firstWord] = meaningMap[firstWord].map(duplicateMeaningMapEntry);
+    result[firstWord] = meaningMap[firstWord].map(duplicateMeaningMapRule);
   }
   return result;
 }

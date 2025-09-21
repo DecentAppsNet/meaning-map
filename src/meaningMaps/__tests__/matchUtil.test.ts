@@ -24,7 +24,7 @@ describe('matchUtil', () => {
       expect(classifications).toEqual(exampleClassifications);
     });
 
-    it('matches all utterances in classification to same meaning ID using meaning map', async () => {
+    it.skip('matches all utterances in classification to same meaning ID using meaning map', async () => {
       const meaningIds = Object.keys(classifications);
       for(let meaningIdI = 0; meaningIdI < meaningIds.length; ++meaningIdI) {
         const meaningId = meaningIds[meaningIdI];

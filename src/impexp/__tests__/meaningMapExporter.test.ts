@@ -16,14 +16,14 @@ describe('meaningMapExporter', () => {
       expect(_reparse(map)).toEqual(map);
     });
 
-    it('reparses a single entry for a single first word', () => {
+    it('reparses a single rule for a single first word', () => {
       const map:MeaningMap = {
         add: [ { followingWords: ['ITEMS'], meaningId: '1.1' } ]
       };
       expect(_reparse(map)).toEqual(map);
     });
 
-    it('reparses multiple entries under a single first word including empty following words', () => {
+    it('reparses multiple rules under a single first word including empty following words', () => {
       const map:MeaningMap = {
         add: [
           { followingWords: [], meaningId: '1' },

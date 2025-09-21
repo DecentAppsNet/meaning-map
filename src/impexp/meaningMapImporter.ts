@@ -2,18 +2,18 @@ import { readTextFile } from "@/common/fileUtil";
 import MeaningMap from "./types/MeaningMap";
 import { normalizeUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 
-function _describeLocation(firstWord:string, entryNo?:number):string {
-  return entryNo === undefined
+function _describeLocation(firstWord:string, ruleNo?:number):string {
+  return ruleNo === undefined
     ? `first word "${firstWord}"`
-    : `entry #${entryNo} for first word "${firstWord}"`;
+    : `rule #${ruleNo} for first word "${firstWord}"`;
 }
 
-function _parseEntry(entry:string, firstWord:string, entryNo:number) {
-  const colonPos = entry.lastIndexOf(':');
-  if (colonPos === -1) throw new Error(`${_describeLocation(firstWord, entryNo)}: Invalid entry (missing ':').`);
-  const utterance = normalizeUtterance(entry.slice(0, colonPos));
-  const meaningId = entry.slice(colonPos + 1).trim();
-  if (!meaningId) throw new Error(`${_describeLocation(firstWord, entryNo)}: Invalid entry (empty meaningId).`);
+function _parseRule(rule:string, firstWord:string, ruleNo:number) {
+  const colonPos = rule.lastIndexOf(':');
+  if (colonPos === -1) throw new Error(`${_describeLocation(firstWord, ruleNo)}: Invalid rule (missing ':').`);
+  const utterance = normalizeUtterance(rule.slice(0, colonPos));
+  const meaningId = rule.slice(colonPos + 1).trim();
+  if (!meaningId) throw new Error(`${_describeLocation(firstWord, ruleNo)}: Invalid rule (empty meaningId).`);
   const followingWords = utterance === '' ? [] : utteranceToWords(utterance);
   return { followingWords, meaningId };
 }
@@ -33,11 +33,11 @@ export function parseMeaningMap(text:string):MeaningMap {
   const obj = _jsonTextToObject(text);
   const meaningMap:MeaningMap = {};
   for (const firstWord of Object.keys(obj)) {
-    const entries = obj[firstWord];
-    if (!Array.isArray(entries)) throw new Error(`${_describeLocation(firstWord)}: Value must be an array.`);
-    meaningMap[firstWord] = entries.map((entry:any, entryNo) => {
-      if (typeof entry !== 'string') throw new Error(`${_describeLocation(firstWord)}: must be a string.`);
-      return _parseEntry(entry, firstWord, entryNo);
+    const rules = obj[firstWord];
+    if (!Array.isArray(rules)) throw new Error(`${_describeLocation(firstWord)}: Value must be an array.`);
+    meaningMap[firstWord] = rules.map((rule:any, ruleNo) => {
+      if (typeof rule !== 'string') throw new Error(`${_describeLocation(firstWord)}: must be a string.`);
+      return _parseRule(rule, firstWord, ruleNo);
     });
   }
   return meaningMap;
