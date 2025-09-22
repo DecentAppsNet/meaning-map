@@ -1,13 +1,21 @@
 import { writeJsonFile } from "@/common/fileUtil";
 import MeaningMap from "./types/MeaningMap";
 import MeaningMapRule from "./types/MeaningMapRule";
+import { numberToHex } from "@/common/hexUtil";
 
 type MeaningMapFileFormat = {
   [firstWord:string]:string[]
 }
 
+function _tieBreakIdsToFormat(tieBreakIds?:number[]):string {
+  if (!tieBreakIds) return '';
+  return '!' + tieBreakIds.map(numberToHex).join(',');
+}
+
+// E.g. "what is in NUMBER:0", "i put ITEMS in ITEMS2:1!-3a,7f"
 function _ruleToFormat(rule:MeaningMapRule):string {
-  return `${rule.followingWords.join(' ').trim()}:${rule.meaningId}`;
+  const tieBreakIdsText = _tieBreakIdsToFormat(rule.tieBreakIds);
+  return `${rule.followingWords.join(' ').trim()}:${rule.meaningId}${tieBreakIdsText}`;
 }
 
 export function meaningMapToText(meaningMap:MeaningMap):string {

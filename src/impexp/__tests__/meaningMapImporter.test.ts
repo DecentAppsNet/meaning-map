@@ -70,5 +70,15 @@ describe('meaningMapImporter', () => {
       const json = '{"add": ["ITEMS:"]}';
       expect(() => parseMeaningMap(json)).toThrow(/empty meaningId/);
     });
+
+    it('throws when tie break IDs are malformed', () => {
+      const json = '{"add": ["ITEMS:1!-zz"]}';
+      expect(() => parseMeaningMap(json)).toThrow(/Malformed tie break IDs/);
+    });
+
+    it('throw if missing tie break IDs after !', () => {
+      const json = '{"add": ["ITEMS:1!"]}';
+      expect(() => parseMeaningMap(json)).toThrow(/Malformed tie break IDs/);
+    });
   });
 });

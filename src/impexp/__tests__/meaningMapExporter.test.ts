@@ -6,24 +6,24 @@ import { parseMeaningMap } from '../meaningMapImporter';
 
 describe('meaningMapExporter', () => {
   describe('meaningMapToText()', () => {
-    function _reparse(meaningMap:MeaningMap):MeaningMap {
+    function _roundTrip(meaningMap:MeaningMap):MeaningMap {
       const text = meaningMapToText(meaningMap);
       return parseMeaningMap(text);
     }
 
-    it('reparses an empty map', () => {
+    it('round trips an empty map', () => {
       const map:MeaningMap = {};
-      expect(_reparse(map)).toEqual(map);
+      expect(_roundTrip(map)).toEqual(map);
     });
 
-    it('reparses a single rule for a single first word', () => {
+    it('round trips a single rule for a single first word', () => {
       const map:MeaningMap = {
         add: [ { followingWords: ['ITEMS'], meaningId: '1.1' } ]
       };
-      expect(_reparse(map)).toEqual(map);
+      expect(_roundTrip(map)).toEqual(map);
     });
 
-    it('reparses multiple rules under a single first word including empty following words', () => {
+    it('round trips multiple rules under a single first word including empty following words', () => {
       const map:MeaningMap = {
         add: [
           { followingWords: [], meaningId: '1' },
@@ -31,10 +31,10 @@ describe('meaningMapExporter', () => {
           { followingWords: ['to', 'NUMBER'], meaningId: '1.2' }
         ]
       };
-      expect(_reparse(map)).toEqual(map);
+      expect(_roundTrip(map)).toEqual(map);
     });
 
-    it('reparses multiple first words', () => {
+    it('round trips multiple first words', () => {
       const map:MeaningMap = {
         add: [ { followingWords: [], meaningId: '1' } ],
         where: [
@@ -42,7 +42,17 @@ describe('meaningMapExporter', () => {
           { followingWords: ['are', 'ITEMS'], meaningId: '2.1' }
         ]
       };
-      expect(_reparse(map)).toEqual(map);
+      expect(_roundTrip(map)).toEqual(map);
+    });
+
+    it('round trips rule with a tie break ID', () => {
+      const map:MeaningMap = {
+        add: [
+          { followingWords: ['ITEMS'], meaningId: '1.1', tieBreakIds: [1, -2] },
+          { followingWords: ['ITEMS', 'to', 'NUMBER'], meaningId: '1.2', tieBreakIds: [-1, 2] }
+        ]
+      };
+      expect(_roundTrip(map)).toEqual(map);
     });
   });
 });
