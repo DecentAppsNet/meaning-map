@@ -34,8 +34,8 @@ function _findMinimalDistinguishingMatchWordsForUtterance(utterance:string, word
     const matchWords = concatMatchWords(tryCombination);
     if (!doMatchWordsMatchOtherMeanings(matchWords, classifications, meaningId, excludedUtterances)) return matchWords;
     tryCombination = findNextTryCombination(tryCombination);
+    /* v8 ignore start */
   }
-  /* v8 ignore start */
   /* No distinguishing combination of match words found. This should be impossible because:
 
   1. every utterance in the classification is unique. 

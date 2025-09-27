@@ -81,30 +81,32 @@ export function areMeaningMapTrumpsValid(meaningMap:MeaningMap):boolean {
   const positiveIds = new Set<number>;
   const negativeIds = new Set<number>;
   const entries = Object.values(meaningMap);
-  entries.forEach(rules => {
-    rules.forEach(rule => {
-      if (rule.trumpIds) {
-        rule.trumpIds.forEach(trumpId => {
-          if (trumpId > 0) {
-            if (positiveIds.has(trumpId)) {
-              console.error(`trump ID ${trumpId} used multiple times.`);
-              return false;
-            }
-            positiveIds.add(trumpId);
-          } else if (trumpId < 0) {
-            if (negativeIds.has(trumpId)) {
-              console.error(`trump ID ${trumpId} used multiple times.`);
-              return false;
-            }
-            negativeIds.add(trumpId);
-          } else {
-            console.error('trump ID for rule should not be 0');
+  for(let entryI = 0; entryI < entries.length; ++entryI) {
+    const rules = entries[entryI];
+    for (let ruleI = 0; ruleI < rules.length; ++ruleI) {
+      const rule = rules[ruleI];
+      if (!rule.trumpIds) continue; 
+      for (let idI = 0; idI < rule.trumpIds.length; ++idI) {
+        const trumpId = rule.trumpIds[idI];
+        if (trumpId > 0) {
+          if (positiveIds.has(trumpId)) {
+            console.error(`trump ID ${trumpId} used multiple times.`);
             return false;
           }
-        })
+          positiveIds.add(trumpId);
+        } else if (trumpId < 0) {
+          if (negativeIds.has(trumpId)) {
+            console.error(`trump ID ${trumpId} used multiple times.`);
+            return false;
+          }
+          negativeIds.add(trumpId);
+        } else {
+          console.error('trump ID for rule should not be 0');
+          return false;
+        }
       }
-    });
-  });
+    }
+  }
   // Check that every element of positive IDs has a matching negative ID.
   for(const positiveId of positiveIds) {
     if (!negativeIds.has(-positiveId)) {

@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createSubsetIndex, addTrumpsForSubsetsAndSupersets } from '../supersetUtil';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createSubsetIndex, addTrumpsForSubsetsAndSupersets, areMeaningMapTrumpsValid } from '../supersetUtil';
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
 import MeaningMap, { duplicateMeaningMap } from '@/impexp/types/MeaningMap';
 import SubsetIndex from '../types/SubsetIndex';
+import { disableConsoleError, reenableConsoleError } from '@/common/testUtil';
 
 describe('supersetUtil', () => {
   describe('createSubsetIndex()', () => {
@@ -120,4 +121,56 @@ describe('supersetUtil', () => {
     });
   });
   
+  describe('areMeaningMapTrumpsValid()', () => {
+    const originalMeaningMap:MeaningMap = {
+      'the':[
+        {followingWords:['brown','fox'],meaningId:'1', trumpIds:[-1]},
+        {followingWords:['quick','fox'],meaningId:'2', trumpIds:[1,-2]},
+        {followingWords:['amazing','brown','fox'],meaningId:'3', trumpIds:[2]}
+      ],
+      'best':[
+        {followingWords:['present'],meaningId:'4'},
+      ]
+    };
+    let meaningMap:MeaningMap;
+
+
+    beforeEach(() => {
+      meaningMap = duplicateMeaningMap(originalMeaningMap);
+      disableConsoleError();
+    });
+
+    afterEach(() => {
+      reenableConsoleError();
+    });
+
+    it('returns true if all trump IDs in meaning map are good.', () => {
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(true);
+    });
+
+    it('returns false if positive trump ID used multiple times', () => {
+      meaningMap.the[2].trumpIds?.push(1);
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(false);
+    });
+
+    it('returns false if negative trump ID used multiple times', () => {
+      meaningMap.the[1].trumpIds?.push(-1);
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(false);
+    });
+
+    it('returns false if a trump ID is 0', () => {
+      meaningMap.the[0].trumpIds?.push(0);
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(false);
+    });
+
+    it('returns false if a positive trump ID does not have a matching negative trump ID', () => {
+      meaningMap.the[0].trumpIds?.push(99);
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(false);
+    });
+
+    it('returns false if a negative trump ID does not have a matching positive trump ID', () => {
+      meaningMap.the[1].trumpIds?.push(-77);
+      expect(areMeaningMapTrumpsValid(meaningMap)).toEqual(false);
+    });
+  });
 });

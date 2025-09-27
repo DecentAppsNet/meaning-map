@@ -31,12 +31,14 @@ export function log(message:string) {
   theLog.push(indent + message);
 }
 
+// Call when you want the output of logging so far.
 export function flushLog():string {
   const result = theLog.join('\n');
   theLog = []; // Must retain the indent level.
   return result;
 }
 
+// Call when you just want to reset the log to a clean state.
 export function clearLog() {
   theLog = [];
   theIndentLevel = 0;

@@ -36,6 +36,21 @@ describe('matchUtil', () => {
       const match = await matchMeaning('when', meaningMap2);
       expect(match).toBeNull();
     });
+
+    it('handles an utterance that matches to multiple rules with unrelated trump IDs', async () => {
+      const meaningMap2 = duplicateMeaningMap(meaningMap);
+      meaningMap2['remove'] = [ 
+        { followingWords: ['stuff'], meaningId: '2.1', trumpIds:[-6] },
+        { followingWords: ['even'], meaningId: '2.2', trumpIds:[6] },
+      ];
+      const match = await matchMeaning('should i remove even more stuff', meaningMap2);
+      expect(match?.meaningId).toEqual('2.2');
+    });
+
+    it('handles an utterance that matches no rules', async () => {
+      const match = await matchMeaning('unmatchable', meaningMap);
+      expect(match).toBeNull();
+    });
   });
 
   describe('doMatchWordsMatchUtterance()', () => {

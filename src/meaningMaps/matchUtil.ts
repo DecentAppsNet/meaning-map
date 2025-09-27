@@ -40,7 +40,7 @@ function _addActiveMatchesForFirstWord(firstWord:string, remainingEvalCount:numb
   }
 }
 
-function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatches:ActiveMatch[]) {
+function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatches:ActiveMatch[]):ActiveMatch[] {
   for(let i = 0; i < activeMatches.length; ++i) {
     const activeMatch = activeMatches[i];
     if (activeMatch.isMatched) continue;
@@ -53,7 +53,7 @@ function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatc
     }
   }
   // Cull matches that are impossible because not enough words remain to match them.
-  activeMatches = activeMatches.filter(am => am.isMatched || am.remainingWords.length <= remainingEvalCount);
+  return activeMatches.filter(am => am.isMatched || am.remainingWords.length < remainingEvalCount);
 }
 
 function _compareMatchesForTrumps(firstMatch:ActiveMatch, secondMatch:ActiveMatch):number {
@@ -75,16 +75,11 @@ function _compareMatchesForTrumps(firstMatch:ActiveMatch, secondMatch:ActiveMatc
 
 function _findBestMeaningMatch(activeMatches:ActiveMatch[]):ActiveMatch|null {
   if (activeMatches.length === 0) return null;
-  let firstMatchedI = 0;
-  for(; firstMatchedI < activeMatches.length; ++firstMatchedI) {
-    if (activeMatches[firstMatchedI].isMatched) break;
-  }
-  if (firstMatchedI === activeMatches.length) return null;
-  let bestActiveMatch = activeMatches[firstMatchedI];
+  assert(activeMatches.every(am => am.isMatched));
+  let bestActiveMatch = activeMatches[0];
 
-  for(let i = firstMatchedI+1; i < activeMatches.length; ++i) {
+  for(let i = 1; i < activeMatches.length; ++i) {
     const activeMatch = activeMatches[i];
-    if (!activeMatch.isMatched) continue;
     const trumpCompare = _compareMatchesForTrumps(bestActiveMatch, activeMatch);
     if (trumpCompare) {
       if (trumpCompare > 0) bestActiveMatch = activeMatch;
@@ -98,13 +93,14 @@ function _findBestMeaningMatch(activeMatches:ActiveMatch[]):ActiveMatch|null {
 export function matchMeaningForReplacedUtterance(replacedUtterance:string, meaningMap:MeaningMap, replacedValues:ReplacedValues = {}):MeaningMatch|null {
   assert(isValidUtterance(replacedUtterance));
   const words = utteranceToWords(replacedUtterance);
-  const activeMatches:ActiveMatch[] = [];
+  let activeMatches:ActiveMatch[] = [];
   let remainingEvalCount = words.length;
   for(let wordI = 0; wordI < words.length; ++wordI) {
     const word = words[wordI];
-    _updateActiveMatches(word, remainingEvalCount, activeMatches);
+    activeMatches = _updateActiveMatches(word, remainingEvalCount, activeMatches);
     _addActiveMatchesForFirstWord(word, --remainingEvalCount, meaningMap, activeMatches);
   }
+  assert(activeMatches.every(am => am.isMatched)); // Because every active match should either have matched or filtered out.
   const bestMatch = _findBestMeaningMatch(activeMatches);
   if (!bestMatch) return null; // No match found.
   return { meaningId:bestMatch.ruleReference.rule.meaningId, ruleReference:bestMatch.ruleReference, paramValues:replacedValues };
