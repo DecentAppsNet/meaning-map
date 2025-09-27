@@ -8,55 +8,51 @@ import TryCombination from "./types/TryCombination";
 import { importMeaningClassifications } from "@/impexp/meaningClassificationsImporter";
 import { endSection, log, setStatus, startSection } from "@/common/describeLog";
 import { exportMeaningMap } from "@/impexp/meaningMapExporter";
-import { matchMeaningForReplacedUtterance } from "./matchUtil";
 import { generateWordUsageMap } from "@/classification/wordUsageUtil";
 import { countUtterances, doMatchWordsMatchOtherMeanings } from "@/classification/classifyUtil";
 import { addRule } from "./ruleOperationsUtil";
+import SubsetIndex from "./types/SubsetIndex";
+import { addTrumpsForSubsetsAndSupersets, areMeaningMapTrumpsValid, createSubsetIndex } from "./supersetUtil";
+import UtteranceToRuleReferenceMap from "./types/RuleReferenceIndex";
+import { UNCLASSIFIED_MEANING_ID } from "@/impexp/types/MeaningIndex";
+import { matchMeaning } from "./matchUtil";
+import { unreplaceWithPlaceholders } from "@/replacement/replaceUtil";
+
+function _getExcludedSupersetUtterances(utterance:string, subsetIndex:SubsetIndex):Set<string>|undefined {
+  const subset = subsetIndex[utterance];
+  if (!subset) return undefined;
+  return new Set(subset.supersetUtterances);
+}
 
 // Find the smallest set of words that exclusively match an utterance to one meaning ID.
-function _findMinimalExclusiveMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, classifications:MeaningClassifications):string[]|null {
+function _findMinimalDistinguishingMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, 
+    classifications:MeaningClassifications, subsetIndex:SubsetIndex):string[] {
   assert(isValidUtterance(utterance));
+  const excludedUtterances = _getExcludedSupersetUtterances(utterance, subsetIndex);
   let tryCombination:TryCombination|null = createFirstTryCombination(utterance, wordUsageMap);
   while(tryCombination) {
     const matchWords = concatMatchWords(tryCombination);
-    if (!doMatchWordsMatchOtherMeanings(matchWords, classifications, meaningId)) return matchWords;
+    if (!doMatchWordsMatchOtherMeanings(matchWords, classifications, meaningId, excludedUtterances)) return matchWords;
     tryCombination = findNextTryCombination(tryCombination);
   }
-  return null; // No match words found that uniquely identify this utterance.
+  /* v8 ignore start */
+  /* No distinguishing combination of match words found. This should be impossible because:
+
+  1. every utterance in the classification is unique. 
+  2. using 100% of the words in the utterance as match words will distinguish from all other utterances aside from supersets
+  3. for supersets, these can always be distinguished for the subsets by using 100% of their words as match words
+
+  But I'll throw instead of assert/botch in case I'm wrong and there's a rare edge case left. */
+  throw new Error(`Failed to find unique match words for "${utterance}" within classifications.`);
 }
-
-// Find the smallest set of words that score highest to match an utterance to one meaning ID. TODO this is wrong alg.
-function _findMinimalScoreMatchWordsForUtterance(utterance:string, wordUsageMap:WordUsageMap, meaningId:string, meaningMap:MeaningMap):string[]|null {
-  assert(isValidUtterance(utterance));
-
-  // Check if one of the other rules in the meaning map already matches this utterance.
-  const match = matchMeaningForReplacedUtterance(utterance, meaningMap);
-  if (match && match.meaningId === meaningId) return [];
-
-  let tryCombination:TryCombination|null = createFirstTryCombination(utterance, wordUsageMap);
-  while(tryCombination) {
-    const matchWords = concatMatchWords(tryCombination);
-    const tryUtterance = matchWords.join(' ');
-    const match = matchMeaningForReplacedUtterance(tryUtterance, meaningMap);
- 
-    if (!match) return matchWords; // Words don't match against any existing rule.
-    if (match.meaningId === meaningId) return []; // Words match against an existing rule that has same meaning ID.
-
-    tryCombination = findNextTryCombination(tryCombination);
-  }
-  return null; // No match words found that uniquely match this utterance by score.
-}
-
-type PostponedUtterance = {
-  utterance:string,
-  meaningId:string
-};
+/* v8 ignore end */
 
 export function generateMeaningMapFromClassifications(classifications:MeaningClassifications):MeaningMap {
   const wordUsageMap = generateWordUsageMap(classifications);
   const meaningMap:MeaningMap = {};
   const meaningIds:string[] = Object.keys(classifications);
-  const postponed:PostponedUtterance[] = [];
+  const subsetIndex = createSubsetIndex(classifications);
+  const utteranceToRuleReferenceMap:UtteranceToRuleReferenceMap = {};
 
   let addedUtteranceCount = 0;
   const utteranceCount = countUtterances(meaningIds, classifications);
@@ -67,37 +63,54 @@ export function generateMeaningMapFromClassifications(classifications:MeaningCla
     utterances.forEach(utterance => {
       log(`Finding match words for utterance "${utterance}"`);
       assert(isValidUtterance(utterance));
-      const matchWords = _findMinimalExclusiveMatchWordsForUtterance(utterance, wordUsageMap, meaningId, classifications);
-      if (!matchWords) {
-        log(`Postponed utterance "${utterance}" since no unique match words found`);
-        postponed.push({utterance, meaningId});
-      } else {
-        addRule(matchWords, meaningId, meaningMap);
-        ++addedUtteranceCount;
-      }
+      const matchWords = _findMinimalDistinguishingMatchWordsForUtterance(utterance, wordUsageMap, meaningId, classifications, subsetIndex);
+      const ruleReference = addRule(matchWords, meaningId, meaningMap);
+      utteranceToRuleReferenceMap[utterance] = ruleReference;
+      ++addedUtteranceCount;
     });
     endSection();
   });
+  addTrumpsForSubsetsAndSupersets(subsetIndex, utteranceToRuleReferenceMap);
+  assert(areMeaningMapTrumpsValid(meaningMap));
+  
+  return meaningMap;
+}
 
-  if (postponed.length) {
-    startSection(`Processing ${postponed.length} postponed utterances`);
-    postponed.forEach((pu) => {
-      setStatus('generating meaning map', addedUtteranceCount, utteranceCount);
-      const { utterance, meaningId } = pu;
-      log(`Finding match words for postponed utterance "${utterance}"`);
-      const matchWords = _findMinimalScoreMatchWordsForUtterance(utterance, wordUsageMap, meaningId, meaningMap);
-      if (!matchWords) {
-        const text = `Failed to find unique match words for "${utterance}" within meaning map. Not adding matching rule.`;
-        log(text);
-        console.warn(text);
-      } else {
-        if (matchWords.length) addRule(matchWords, meaningId, meaningMap);
-        ++addedUtteranceCount;
+type MatchMiss = { utterance:string, expectedMeaningId:string, actualMeaningId:string };
+export async function doesMeaningMapCorrectlyMatchClassifications(meaningMap:MeaningMap, classifications:MeaningClassifications):Promise<boolean> {
+  startSection('verifying meaning map against classifications');
+  try {
+    const meaningIds = Object.keys(classifications);
+    const utteranceCount = countUtterances(meaningIds, classifications);
+    const misses:MatchMiss[] = [];
+    let utterancesMatched = 0;
+    for(let i = 0; i < meaningIds.length; ++i) {
+      const meaningId = meaningIds[i];
+      const utterances = classifications[meaningId];
+      for(let utteranceI = 0; utteranceI < utterances.length; ++utteranceI) {
+        const utterance = unreplaceWithPlaceholders(utterances[utteranceI]);
+        setStatus(`matching "${utterance}`, utterancesMatched, utteranceCount);
+        const match = await matchMeaning(utterance, meaningMap);
+        const actualMeaningId = match ? match.meaningId : UNCLASSIFIED_MEANING_ID;
+        if (actualMeaningId !== meaningId) {
+          misses.push({ utterance, expectedMeaningId: meaningId, actualMeaningId });
+        }
+        ++utterancesMatched;
       }
+    } 
+    if (misses.length === 0) {
+      setStatus('All utterances correctly matched.', utteranceCount, utteranceCount);
+      return true;
+    }
+    log(`${misses.length} utterances failed to match correctly:`);
+    misses.forEach(miss => {
+      log(`  Utterance "${miss.utterance}" expected meaning ID ${miss.expectedMeaningId} but got ${miss.actualMeaningId}.`);
     });
+    setStatus('Meaning map did not correctly match all utterances.', utteranceCount, utteranceCount);
+    return false;
+  } finally {
     endSection();
   }
-  return meaningMap;
 }
 
 /* v8 ignore start */
@@ -105,7 +118,10 @@ export async function createMeaningMap(classificationFilepath:string, outputFile
   log(`importing classifications from ${classificationFilepath}`);
   const classifications:MeaningClassifications = await importMeaningClassifications(classificationFilepath);
   const meaningMap = generateMeaningMapFromClassifications(classifications);
+  const isValid = await doesMeaningMapCorrectlyMatchClassifications(meaningMap, classifications);
+  if (!isValid) log('WARNING: generated meaning map does not correctly match classifications.');
   log(`exporting meaning map to ${outputFilepath}`);
   await exportMeaningMap(meaningMap, outputFilepath);
+  setStatus('Finished creating meaning map.', 1, 1);
 }
 /* v8 ignore end */

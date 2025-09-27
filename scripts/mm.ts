@@ -8,7 +8,7 @@ import { createMeaningClassification } from "../src/classification/classifyUtil"
 import { createMeaningMap } from "../src/meaningMaps/meaningMapUtil";
 import { fileExists, ensureDir } from "../src/common/fileUtil";
 import { hasNonPosixFilepathChars } from "../src/common/regExUtil";
-import { displayStatusOnUpdate, outputStatus } from "./helpers/outputUtil";
+import { displayStatusOnUpdate, outputRemainingLogs, outputStatus } from "./helpers/outputUtil";
 import { initCli } from "./helpers/initializeUtil";
 
 // ANSI text-formatting codes for console output.
@@ -44,6 +44,7 @@ async function _classify(command:Command) {
 
   await initCli();
   await createMeaningClassification(corpusFilepath, meaningIndexFilepath, outputFilepath);
+  outputRemainingLogs(isVerbose);
 }
 
 async function _map(command:Command) {
@@ -62,6 +63,7 @@ async function _map(command:Command) {
 
   await initCli();
   await createMeaningMap(classificationFilepath, outputFilepath);
+  outputRemainingLogs(isVerbose);
 }
 
 function _help() {

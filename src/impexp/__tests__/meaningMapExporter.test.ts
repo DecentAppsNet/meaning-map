@@ -45,11 +45,11 @@ describe('meaningMapExporter', () => {
       expect(_roundTrip(map)).toEqual(map);
     });
 
-    it('round trips rule with a tie break ID', () => {
+    it('round trips rule with a trump ID', () => {
       const map:MeaningMap = {
         add: [
-          { followingWords: ['ITEMS'], meaningId: '1.1', tieBreakIds: [1, -2] },
-          { followingWords: ['ITEMS', 'to', 'NUMBER'], meaningId: '1.2', tieBreakIds: [-1, 2] }
+          { followingWords: ['ITEMS'], meaningId: '1.1', trumpIds: [1, -2] },
+          { followingWords: ['ITEMS', 'to', 'NUMBER'], meaningId: '1.2', trumpIds: [-1, 2] }
         ]
       };
       expect(_roundTrip(map)).toEqual(map);

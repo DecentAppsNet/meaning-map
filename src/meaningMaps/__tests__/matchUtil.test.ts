@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
-import { unreplaceWithPlaceholders } from "@/replacement/replaceUtil";
-import MeaningMatch from "../types/MeaningMatch";
 import { doMatchWordsMatchUtterance, matchMeaning } from "../matchUtil";
 import { exampleClassifications } from "./data/classificationsTestData";
-import { generateMeaningMapFromClassifications } from "../meaningMapUtil";
+import { doesMeaningMapCorrectlyMatchClassifications, generateMeaningMapFromClassifications } from "../meaningMapUtil";
 import MeaningClassifications, { duplicateMeaningClassifications } from "@/impexp/types/MeaningClassifications";
 import MeaningMap, { duplicateMeaningMap } from "@/impexp/types/MeaningMap";
+import { flushLog } from '@/common/describeLog';
 
 describe('matchUtil', () => {
   describe('matchMeaning()', () => {
@@ -24,19 +23,11 @@ describe('matchUtil', () => {
       expect(classifications).toEqual(exampleClassifications);
     });
 
-    it.skip('matches all utterances in classification to same meaning ID using meaning map', async () => {
-      const meaningIds = Object.keys(classifications);
-      for(let meaningIdI = 0; meaningIdI < meaningIds.length; ++meaningIdI) {
-        const meaningId = meaningIds[meaningIdI];
-        const utterances = classifications[meaningId];
-        expect(utterances && utterances.length > 0);
-        for (let utteranceI = 0; utteranceI < utterances.length; ++utteranceI) {
-          const utterance = unreplaceWithPlaceholders(utterances[utteranceI]);
-          const match:MeaningMatch|null = await matchMeaning(utterance, meaningMap);
-          expect(match).not.toBeNull();
-          expect(match!.meaningId).toEqual(meaningId);
-        }
-      }
+    it('matches all utterances in classification to same meaning ID using meaning map', async () => {
+      flushLog();
+      const result = await doesMeaningMapCorrectlyMatchClassifications(meaningMap, classifications);
+      if (!result) console.log(flushLog());
+      expect(result).toBe(true);
     });
 
     it('handles an utterance that has less words than one of the match rules', async () => {

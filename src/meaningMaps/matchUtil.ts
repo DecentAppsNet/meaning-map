@@ -1,10 +1,11 @@
-import { assert } from '@/common/assertUtil';
+import { assert, assertNonNullable } from '@/common/assertUtil';
 import { isPlainUtterance, isValidUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import MeaningMatch from "./types/MeaningMatch";
 import ReplacedValues from "@/replacement/types/ReplacedValues";
 import MeaningMap from '@/impexp/types/MeaningMap';
 import RuleReference from './types/RuleReference';
+import MeaningMapRule from '@/impexp/types/MeaningMapRule';
 
 type ActiveMatch = {
   remainingWords:string[],
@@ -56,13 +57,39 @@ function _updateActiveMatches(word:string, remainingEvalCount:number, activeMatc
   activeMatches = activeMatches.filter(am => am.isMatched || am.remainingWords.length <= remainingEvalCount);
 }
 
-const ANYTHING_BEATS = -999999;
+function _compareMatchesForTrumps(firstMatch:ActiveMatch, secondMatch:ActiveMatch):number {
+  const firstTrumpIds = firstMatch.ruleReference.rule.trumpIds;
+  const secondTrumpIds = secondMatch.ruleReference.rule.trumpIds;
+  if (!firstTrumpIds || !secondTrumpIds) return 0; // No trump defined for this pair because at least one has match has no trump IDs.
+
+  for(let firstI = 0; firstI < firstTrumpIds.length; ++firstI) {
+    const firstTrumpId = firstTrumpIds[firstI];
+    for(let secondI = 0; secondI < secondTrumpIds.length; ++secondI) {
+      const secondTrumpId = secondTrumpIds[secondI];
+      if (Math.abs(firstTrumpId) === Math.abs(secondTrumpId)) { // Found the trump ID corresponding to this pair of matches.
+        return secondTrumpId;
+      }
+    }
+  }
+  return 0; // Both matches had trump IDs, but no trump defined for this pair.
+}
+
 function _findBestMeaningMatch(activeMatches:ActiveMatch[]):ActiveMatch|null {
-  let bestScore = ANYTHING_BEATS, bestActiveMatch:ActiveMatch|null = null;
-  for(let i = 0; i < activeMatches.length; ++i) {
+  if (activeMatches.length === 0) return null;
+  let firstMatchedI = 0;
+  for(; firstMatchedI < activeMatches.length; ++firstMatchedI) {
+    if (activeMatches[firstMatchedI].isMatched) break;
+  }
+  if (firstMatchedI === activeMatches.length) return null;
+  let bestActiveMatch = activeMatches[firstMatchedI];
+
+  for(let i = firstMatchedI+1; i < activeMatches.length; ++i) {
     const activeMatch = activeMatches[i];
-    if (activeMatch.isMatched && activeMatch.matchScore > bestScore) {
-      bestScore = activeMatch.matchScore;
+    if (!activeMatch.isMatched) continue;
+    const trumpCompare = _compareMatchesForTrumps(bestActiveMatch, activeMatch);
+    if (trumpCompare) {
+      if (trumpCompare > 0) bestActiveMatch = activeMatch;
+    } else if (activeMatch.matchScore > bestActiveMatch.matchScore) {
       bestActiveMatch = activeMatch;
     }
   }

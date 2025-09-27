@@ -1,4 +1,3 @@
-
 /* Used for keeping a description of things that happen across many calls without console.log(). */
 
 export type OnStatusCallback = (message:string, completedCount:number, totalCount:number) => void;
@@ -12,11 +11,6 @@ export function setOnStatusCallback(callback:OnStatusCallback|null) {
 }
 
 const INDENT = '  ';
-
-function _clearLog() {
-  theLog = [];
-  theIndentLevel = 0;
-}
 
 export function startSection(message:string) {
   log(`${message} {`);
@@ -39,8 +33,13 @@ export function log(message:string) {
 
 export function flushLog():string {
   const result = theLog.join('\n');
-  _clearLog();
+  theLog = []; // Must retain the indent level.
   return result;
+}
+
+export function clearLog() {
+  theLog = [];
+  theIndentLevel = 0;
 }
 
 export function doesLogInclude(matchText:string):boolean {

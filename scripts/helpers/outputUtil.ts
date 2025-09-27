@@ -28,3 +28,10 @@ export function displayStatusOnUpdate(status:string, completedCount:number, tota
   }
   outputStatus(status, completedCount, totalCount);
 }
+
+export function outputRemainingLogs(isVerbose:boolean) {
+  if (!isVerbose) return;
+  const flushed = flushLog();
+  if (flushed && flushed.length > 0) console.log(flushed);
+  theLastStatusLength = 0;
+}

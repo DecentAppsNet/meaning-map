@@ -71,14 +71,14 @@ describe('meaningMapImporter', () => {
       expect(() => parseMeaningMap(json)).toThrow(/empty meaningId/);
     });
 
-    it('throws when tie break IDs are malformed', () => {
+    it('throws when trump IDs are malformed', () => {
       const json = '{"add": ["ITEMS:1!-zz"]}';
-      expect(() => parseMeaningMap(json)).toThrow(/Malformed tie break IDs/);
+      expect(() => parseMeaningMap(json)).toThrow(/Malformed trump IDs/);
     });
 
-    it('throw if missing tie break IDs after !', () => {
+    it('throw if missing trump IDs after !', () => {
       const json = '{"add": ["ITEMS:1!"]}';
-      expect(() => parseMeaningMap(json)).toThrow(/Malformed tie break IDs/);
+      expect(() => parseMeaningMap(json)).toThrow(/Malformed trump IDs/);
     });
   });
 });

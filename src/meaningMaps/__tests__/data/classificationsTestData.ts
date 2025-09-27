@@ -20,14 +20,19 @@ export const exampleMeaningMap:MeaningMap = {
     { followingWords: [], meaningId: '1' }
   ],
   do: [ { followingWords: [], meaningId: '1.1' } ],
-  why: [ { followingWords: ['stuff'], meaningId: '1.1' }, { followingWords: ['things'], meaningId: '1.2' } ],
+  why: [ 
+    { followingWords: ['stuff'], meaningId: '1.1' }, 
+    { followingWords: ['things'], meaningId: '1.2' } 
+  ],
   needed: [ { followingWords: [], meaningId: '1.2' } ],
   maybe: [ { followingWords: [], meaningId: '1.2' } ],
-  actually: [ { followingWords: [], meaningId: '1.3' } ],
-  literally: [ { followingWords: [], meaningId: '1.3' } ],
+  actually: [ { followingWords: [], meaningId: '1.3', trumpIds: [2, 4] } ],
+  literally: [ { followingWords: [], meaningId: '1.3', trumpIds: [3, 5] } ],
   not: [ { followingWords: [], meaningId: '1.4' } ],
   "don't": [ { followingWords: [], meaningId: '1.4' } ],
   be: [ { followingWords: [], meaningId: '1.5' } ],
-  should: [ { followingWords: [], meaningId: '1.1' } ],
-  even: [ { followingWords: [], meaningId: '1.2' } ]
+  should: [ 
+    { followingWords: ['stuff'], meaningId: '1.1', trumpIds: [-1, -2, -3] },
+    { followingWords: ['even'], meaningId: '1.2', trumpIds: [1, -4, -5] }
+  ]
 };

@@ -1,7 +1,6 @@
 type Subset = {
-  utterance: string,
-  meaningId: string,
-  supersetUtterances: string[]
+  utterance:string;
+  supersetUtterances:string[];
 }
 
 export default Subset;
