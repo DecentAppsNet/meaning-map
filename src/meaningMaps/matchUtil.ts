@@ -1,11 +1,10 @@
-import { assert, assertNonNullable } from '@/common/assertUtil';
+import { assert } from '@/common/assertUtil';
 import { isPlainUtterance, isValidUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import MeaningMatch from "./types/MeaningMatch";
 import ReplacedValues from "@/replacement/types/ReplacedValues";
 import MeaningMap from '@/impexp/types/MeaningMap';
 import RuleReference from './types/RuleReference';
-import MeaningMapRule from '@/impexp/types/MeaningMapRule';
 
 type ActiveMatch = {
   remainingWords:string[],
