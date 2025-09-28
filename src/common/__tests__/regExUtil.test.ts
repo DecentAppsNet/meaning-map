@@ -75,6 +75,22 @@ describe('regExUtil', () => {
     it('returns empty when text contains no all-caps words', () => {
       expect(extractAllCapsWords('no caps here')).toEqual([]);
     });
+
+    it('returns multiple all-caps words', () => {
+      expect(extractAllCapsWords('SOME caps HERE')).toEqual(['SOME', 'HERE']);
+    });
+
+    it('removes punctuation from end of an all-caps word', () => {
+      expect(extractAllCapsWords('be SURGICAL!')).toEqual(['SURGICAL']);
+    });
+
+    it('removes punctuation from beginning of an all-caps word', () => {
+      expect(extractAllCapsWords('be ?SURGICAL')).toEqual(['SURGICAL']);
+    });
+
+    it('punctuation in middle of all-caps word splits it to two', () => {
+      expect(extractAllCapsWords('i live in a TREE-HOUSE')).toEqual(['TREE', 'HOUSE']);
+    });
   });
 
   describe('isWhiteSpaceChar()', () => {

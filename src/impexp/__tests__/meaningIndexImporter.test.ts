@@ -98,32 +98,42 @@ describe('meaningIndexImporter', () => {
       });
 
       it('instructions before n-shot are captured', () => {
-        const sample = `1.\nNote: do this\nUSER: u\nASSISTANT: a`;
+        const sample = `1.\nNote: do this\nUSER: u\nASSISTANT: N`;
         const res = parseMeaningIndex(sample);
         expect(res['1'].promptInstructions).toBe('Note: do this');
       });
 
       it('instructions after n-shot are captured', () => {
-        const sample = `1.\nUSER: u\nASSISTANT: a\nNote: after`;
+        const sample = `1.\nUSER: u\nASSISTANT: M\nNote: after`;
         const res = parseMeaningIndex(sample);
         expect(res['1'].promptInstructions).toBe('Note: after');
       });
 
       it('an instruction between USER and ASSISTANT causes a parse error', () => {
-        const sample = `1.\nUSER: u\nNote: intrude\nASSISTANT: a`;
+        const sample = `1.\nUSER: u\nNote: intrude\nASSISTANT: Y`;
         expect(() => parseMeaningIndex(sample)).toThrow();
       });
 
       it('and instruction between n-shot pairs is parsed', () => {
-        const sample = `1.\nUSER: u\nASSISTANT: a\nNote: between\nUSER: u2\nASSISTANT: a2`;
+        const sample = `1.\nUSER: u\nASSISTANT: Y\nNote: between\nUSER: u2\nASSISTANT: Y`;
         const res = parseMeaningIndex(sample);
         expect(res['1'].promptInstructions).toBe('Note: between');
       });
 
       it('concatenates instructions found before and after n-shot pairs', () => {
-        const sample = `1.\nUSER: u\nASSISTANT: a\nNote: before\nUSER: u2\nASSISTANT: a2\nNote: after`;
+        const sample = `1.\nUSER: u\nASSISTANT: N\nNote: before\nUSER: u2\nASSISTANT: N\nNote: after`;
         const res = parseMeaningIndex(sample);
         expect(res['1'].promptInstructions).toBe('Note: before\nNote: after');
+      });
+
+      it('throws if user message is not a valid utterance', () => {
+        const sample = `1.\nUSER: uGly\nASSISTANT: Y`;
+        expect(() => parseMeaningIndex(sample)).toThrow();
+      });
+
+      it('throws if assistant response is not "Y", "N" or "M".', () => {
+        const sample = `1.\nUSER: hi\nASSISTANT: X`;
+        expect(() => parseMeaningIndex(sample)).toThrow();
       });
     });
 
@@ -134,11 +144,11 @@ describe('meaningIndexImporter', () => {
       });
 
       it('correctly-formed USER/ASSISTANT pairs are parsed', () => {
-        const sample = `1.\nUSER: hello\nASSISTANT: hi\nUSER: bye\nASSISTANT: bye-bye`;
+        const sample = `1.\nUSER: hello\nASSISTANT: Y\nUSER: bye\nASSISTANT: N`;
         const res = parseMeaningIndex(sample);
         expect(res['1'].nShotPairs.length).toBe(2);
-        expect(res['1'].nShotPairs[0]).toEqual({ userMessage: 'hello', assistantResponse: 'hi' });
-        expect(res['1'].nShotPairs[1]).toEqual({ userMessage: 'bye', assistantResponse: 'bye-bye' });
+        expect(res['1'].nShotPairs[0]).toEqual({ userMessage: 'hello', assistantResponse: 'Y' });
+        expect(res['1'].nShotPairs[1]).toEqual({ userMessage: 'bye', assistantResponse: 'N' });
       });
 
       it('USER without following ASSISTANT throws', () => {
@@ -146,10 +156,9 @@ describe('meaningIndexImporter', () => {
         expect(() => parseMeaningIndex(sample)).toThrow();
       });
 
-      it('ASSISTANT without preceding USER becomes an instruction', () => {
-        const sample = `1.\nASSISTANT: unsolicited`;
-        const res = parseMeaningIndex(sample);
-        expect(res['1'].promptInstructions).toBe('ASSISTANT: unsolicited');
+      it('ASSISTANT without preceding USER throws', () => {
+        const sample = `1.\nASSISTANT: Y`;
+        expect(() => parseMeaningIndex(sample)).toThrow();
       });
     });
 

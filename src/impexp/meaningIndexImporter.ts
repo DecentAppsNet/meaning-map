@@ -3,6 +3,7 @@ import Meaning from './types/Meaning';
 import MeaningIndex, { UNCLASSIFIED_MEANING_ID } from './types/MeaningIndex';
 import { readTextFile } from '../common/fileUtil';
 import { extractAllCapsWords, isDigitChar, isWhiteSpaceChar } from '../common/regExUtil';
+import { isValidUtterance } from '@/classification/utteranceUtil';
 
 
 function _stripTrailingDot(text:string):string {
@@ -77,12 +78,16 @@ function _isAssistantLine(line:string):boolean {
 
 function _parseUserMessage(line:string):string {
   assert(line.length >= USER_PREFIX.length);
-  return line.slice(USER_PREFIX.length).trim();
+  const userMessage = line.slice(USER_PREFIX.length).trim();
+  if (!isValidUtterance(userMessage)) throw new Error(`User message "${userMessage}" is not a valid utterance.`);
+  return userMessage;
 }
 
 function _parseAssistantResponse(line:string):string {
   assert(line.length >= ASSISTANT_PREFIX.length);
-  return line.slice(ASSISTANT_PREFIX.length).trim();
+  const response = line.slice(ASSISTANT_PREFIX.length).trim().toUpperCase();
+  if (!['Y','N','M'].includes(response)) throw new Error(`Assistant response "${response}" is not a valid response of "Y", "N", or "M".`);
+  return response;
 }
 
 export function parseMeaningIndex(text:string):MeaningIndex {
@@ -114,7 +119,7 @@ export function parseMeaningIndex(text:string):MeaningIndex {
       
     if (_isUserLine(line)) {
       if (lineI >= lines.length || !_isAssistantLine(lines[lineI + 1])) {
-        throw new Error(`Invalid USER: line at line ${lineI + 1} is not followed by ASSISTANT:`);
+        throw new Error(`Invalid USER line at line ${lineI + 1} is not followed by ASSISTANT.`);
       }
       const userMessage = _parseUserMessage(line);
       const assistantResponse = _parseAssistantResponse(lines[lineI+1]);
@@ -122,6 +127,8 @@ export function parseMeaningIndex(text:string):MeaningIndex {
       ++lineI;
       continue;
     }
+
+    if (_isAssistantLine(line)) throw new Error(`Invalid ASSISTANT line at line ${lineI + 1} is not preceded by USER.`);
 
     // anything else is prompt instructions
     currentMeaning.promptInstructions += (currentMeaning.promptInstructions ? '\n' : '') + line;
