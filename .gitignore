@@ -21,6 +21,7 @@ cache/*.json
 cache/*.txt
 cache/*.md
 cache/.llm*
+cache/*.tmp-*
 datasets/*
 !datasets/.gitkeep
 !packables-minimal-for-test.txt
