@@ -70,3 +70,27 @@ export function findParamsInUtterance(utterance:string):string[] {
   const words = utterance.split(' ');
   return words.filter(isParam);
 }
+
+let thePunctuationSet:Set<string>|null = null;
+function _unpunctuate(text:string):string {
+  if (!thePunctuationSet) {
+    const punct = [
+      // ASCII punctuation - left out apostrophe and hyphen.
+      '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', ',', '.', '/',
+      ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+      '{', '|', '}', '~',
+      // Unicode punctuation
+      '«', '»', '‹', '›', '„', '“', '”', '‘', '’', '…', '·', '•', '¡', '¿', '—', '–', '‑', '´', '`', '¨', '¸'
+    ];
+    thePunctuationSet = new Set(punct);
+  }
+  const cleaned = [...text].filter(ch => !thePunctuationSet!.has(ch)).join('');
+  return cleaned;
+}
+
+export function punctuatedToUtterance(text:string):string {
+  const words = text.split(' ').map(w => _unpunctuate(w.trim().toLowerCase()));
+  const utterance = words.join(' ');
+  assert(isValidUtterance(utterance));
+  return utterance;
+}

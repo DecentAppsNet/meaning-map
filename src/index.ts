@@ -2,6 +2,5 @@
 
 export { importMeaningIndex, parseMeaningIndex } from './impexp/meaningIndexImporter';
 export { initialize } from './initialization/initUtil';
-export { classify } from './classification/transformersClassify';
 
 /* v8 ignore end */

@@ -1,5 +1,5 @@
 import { assert } from '@/common/assertUtil';
-import { embedSentence } from "@/embeddings/transformersEmbedder";
+import { embedSentence } from "@/transformersJs/transformersEmbedder";
 import UnitVector from "@/embeddings/types/UnitVector";
 import { averageUnitVectors, removeProjectionFromUnitVector } from '@/embeddings/vectorUtil';
 

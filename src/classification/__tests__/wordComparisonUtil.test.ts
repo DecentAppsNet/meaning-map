@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, beforeAll } from 'vitest';
 
-import { initEmbedder, clearEmbeddingCache } from '@/embeddings/transformersEmbedder';
+import { initEmbedder, clearEmbeddingCache } from '@/transformersJs/transformersEmbedder';
 import { createWordCentroid, createWordsCentroid } from '../wordComparisonUtil';
 import { compareUnitVectors } from '@/embeddings/vectorUtil';
 
@@ -9,7 +9,7 @@ const EMBED_TIMEOUT = 5000;
 describe('wordComparisonUtil', () => {
   beforeAll(async () => {
     await initEmbedder();
-  }, 60000);
+  }, 120000);
 
   beforeEach(() => {
     clearEmbeddingCache();

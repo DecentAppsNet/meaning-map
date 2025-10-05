@@ -73,3 +73,10 @@ export function argsToCommand(availableOptions:AvailableOptions):Command {
   if (currentOption) options.push(currentOption);
   return { commandType, options };
 }
+
+export function argsAfterScript():string[] {
+  const args = process.argv;
+  const scriptArgI = _findScriptArgIndex(args);
+  if (scriptArgI === -1) throw new ExpectedError(`Script missing in command line.`);
+  return args.slice(scriptArgI + 1);
+}
