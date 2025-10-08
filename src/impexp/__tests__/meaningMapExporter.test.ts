@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
-import { meaningMapToText } from '../meaningMapExporter';
-import MeaningMap from '../types/MeaningMap';
-import { parseMeaningMap } from '../meaningMapImporter';
+import { meaningMapToText } from '../meaningMapOldExporter';
+import MeaningMap from '../types/MeaningMapOld';
+import { parseMeaningMap } from '../meaningMapOldImporter';
 
 describe('meaningMapExporter', () => {
   describe('meaningMapToText()', () => {

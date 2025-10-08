@@ -3,7 +3,7 @@
 import { assert, assertNonNullable } from '@/common/assertUtil';
 import MeaningMapRule, { areMeaningMapRulesEqual } from "@/impexp/types/MeaningMapRule";
 import RuleReference from "./types/RuleReference";
-import MeaningMap from "@/impexp/types/MeaningMap";
+import MeaningMap from "@/impexp/types/MeaningMapOld";
 
 function _removeRule(ruleReference:RuleReference, meaningMap:MeaningMap) {
   const { firstWord, rule } = ruleReference;

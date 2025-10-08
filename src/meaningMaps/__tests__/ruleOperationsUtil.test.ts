@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { removeRule, addRule, updateRuleMatchWords } from '../ruleOperationsUtil';
 import MeaningMapRule from '@/impexp/types/MeaningMapRule';
 import RuleReference from '../types/RuleReference';
-import MeaningMap from '@/impexp/types/MeaningMap';
+import MeaningMap from '@/impexp/types/MeaningMapOld';
 
 describe('ruleOperationsUtil', () => {
   describe('removeRule()', () => {

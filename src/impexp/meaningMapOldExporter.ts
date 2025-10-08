@@ -1,5 +1,5 @@
 import { writeTextFile } from "@/common/fileUtil";
-import MeaningMap from "./types/MeaningMap";
+import MeaningMap from "./types/MeaningMapOld";
 import MeaningMapRule from "./types/MeaningMapRule";
 import { numberToHex } from "@/common/hexUtil";
 

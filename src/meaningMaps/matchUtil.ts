@@ -3,7 +3,7 @@ import { isPlainUtterance, isValidUtterance, utteranceToWords } from "@/classifi
 import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import MeaningMatch from "./types/MeaningMatch";
 import ReplacedValues from "@/replacement/types/ReplacedValues";
-import MeaningMap from '@/impexp/types/MeaningMap';
+import MeaningMap from '@/impexp/types/MeaningMapOld';
 import RuleReference from './types/RuleReference';
 
 type ActiveMatch = {

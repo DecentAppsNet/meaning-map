@@ -1,5 +1,5 @@
 import MeaningClassifications from "@/impexp/types/MeaningClassifications";
-import MeaningMap from "@/impexp/types/MeaningMap";
+import MeaningMap from "@/impexp/types/MeaningMapOld";
 
 export const exampleClassifications:MeaningClassifications = {
 	"0": ["why are you here", "what is in NUMBER", "you are here why"],

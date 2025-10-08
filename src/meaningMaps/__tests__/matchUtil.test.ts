@@ -2,9 +2,9 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import { doMatchWordsMatchUtterance, matchMeaning } from "../matchUtil";
 import { exampleClassifications } from "./data/classificationsTestData";
-import { doesMeaningMapCorrectlyMatchClassifications, generateMeaningMapFromClassifications } from "../meaningMapUtil";
+import { doesMeaningMapCorrectlyMatchClassifications, generateMeaningMapFromClassifications } from "../meaningMapOldUtil";
 import MeaningClassifications, { duplicateMeaningClassifications } from "@/impexp/types/MeaningClassifications";
-import MeaningMap, { duplicateMeaningMap } from "@/impexp/types/MeaningMap";
+import MeaningMap, { duplicateMeaningMap } from "@/impexp/types/MeaningMapOld";
 import { flushLog } from '@/common/describeLog';
 
 describe('matchUtil', () => {

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
-import { generateMeaningMapFromClassifications } from '../meaningMapUtil';
+import { generateMeaningMapFromClassifications } from '../meaningMapOldUtil';
 import { exampleClassifications, exampleMeaningMap } from './data/classificationsTestData';
-import MeaningMap from '@/impexp/types/MeaningMap';
+import MeaningMap from '@/impexp/types/MeaningMapOld';
 import { flushLog } from '@/common/describeLog';
 
 describe('meaningMapUtil', () => {

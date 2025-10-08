@@ -1,65 +1,154 @@
-import { readTextFile } from "@/common/fileUtil";
-import MeaningMap from "./types/MeaningMap";
-import { normalizeUtterance, utteranceToWords } from "@/classification/utteranceUtil";
-import { hexToNumber } from "@/common/hexUtil";
+import MeaningMapNode, { UNITIALIZED_VECTOR_GROUP } from "../meaningMaps/types/MeaningMapNode";
+import MeaningMap from "../meaningMaps/types/MeaningMap";
+import { assert, assertNonNullable } from '@/common/assertUtil';
+import { embedSentences } from "@/transformersJs/transformersEmbedder";
+import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/classification/utteranceUtil";
 
-function _describeLocation(firstWord:string, ruleNo?:number):string {
-  return ruleNo === undefined
-    ? `first word "${firstWord}"`
-    : `rule #${ruleNo} for first word "${firstWord}"`;
+const DEFAULT_MATCH_THRESHOLD = .6;
+
+type SentenceToEmbed = {
+  sentence:string,
+  node:MeaningMapNode
 }
 
-function _parseTrumpIds(text:string):number[] {
-  if (text.length === 0) throw new Error('Trump IDs must not be empty.');
-  const idTexts = text.split(',');
-  return idTexts.map(hexToNumber);
-}
-
-function _parseRule(rule:string, firstWord:string, ruleNo:number) {
-  const colonPos = rule.lastIndexOf(':');
-  if (colonPos === -1) throw new Error(`${_describeLocation(firstWord, ruleNo)}: Invalid rule (missing ':').`);
-  const utterance = normalizeUtterance(rule.slice(0, colonPos));
-  const bangPos = rule.indexOf('!', colonPos + 1);
-  let trumpIds:number[]|undefined;
-  try {
-    trumpIds = bangPos === -1 ? undefined : _parseTrumpIds(rule.substring(bangPos+1).trim());
-  } catch {
-    throw new Error(`${_describeLocation(firstWord, ruleNo)}: Malformed trump IDs.`);
+function _createRootNode():MeaningMapNode {
+  return {
+    id: 0,
+    description: 'ROOT',
+    params: [],
+    matchVectorGroup: [],
+    matchThreshold: DEFAULT_MATCH_THRESHOLD,
+    parent: null,
+    children: []
   }
-  const meaningId = bangPos === -1 ? rule.slice(colonPos + 1).trim() : rule.substring(colonPos + 1, bangPos).trim();
-  if (!meaningId) throw new Error(`${_describeLocation(firstWord, ruleNo)}: Invalid rule (empty meaningId).`);
-  const followingWords = utterance === '' ? [] : utteranceToWords(utterance);
-  return { followingWords, meaningId, trumpIds };
 }
 
-function _jsonTextToObject(text:string):Record<string,string> {
-  let obj;
-  try {
-    obj = JSON.parse(text);
-    if (!obj || typeof obj !== 'object') throw new Error('Meaning map must be a JSON object');
-  } catch(err) {
-    throw new Error(`JSON could not be parsed. Error - ${err}`);
+function _textToLines(text:string):string[] {
+  return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+}
+
+function _getLineDepth(line:string):number {
+  let depth = 0;
+  while(line[depth] !== ' ' && depth < line.length) {
+    if (line[depth] !== '#') return -1; // Invalid syntax.
+    ++depth;
   }
-  return obj;
+  return depth;
 }
 
-export function parseMeaningMap(text:string):MeaningMap {
-  const obj = _jsonTextToObject(text);
-  const meaningMap:MeaningMap = {};
-  for (const firstWord of Object.keys(obj)) {
-    const rules = obj[firstWord];
-    if (!Array.isArray(rules)) throw new Error(`${_describeLocation(firstWord)}: Value must be an array.`);
-    meaningMap[firstWord] = rules.map((rule:any, ruleNo) => {
-      if (typeof rule !== 'string') throw new Error(`${_describeLocation(firstWord)}: must be a string.`);
-      return _parseRule(rule, firstWord, ruleNo);
-    });
+function _parseMatchThreshold(line:string, matchThresholdPos:number, lineNo:number):number {
+  if (matchThresholdPos >= line.length - 1) throw _invalidFormatError(line, lineNo, `">" must be followed by a number.`);
+  const matchThresholdStr = line.substring(matchThresholdPos + 1).trim();
+  const matchThreshold = Number(matchThresholdStr);
+  if (isNaN(matchThreshold) || matchThreshold < 0 || matchThreshold > 1) {
+    throw _invalidFormatError(line, lineNo, `">" must be followed by a number between 0 and 1.`);
   }
-  return meaningMap;
+  return matchThreshold;
 }
 
-/* v8 ignore start */ // Everything important is unit-tested via parseMeaningIndex().
-export async function importMeaningMap(filepath:string):Promise<MeaningMap> {
-  const text = await readTextFile(filepath);
-  return parseMeaningMap(text);
+function _parseHeaderLine(line:string, defaultMatchThresholdId:number, lineNo:number):{description:string, params:string[], matchThreshold:number} {
+  const descriptionPos = _getLineDepth(line) + 1;
+  let matchThreshold = defaultMatchThresholdId;
+  assert(descriptionPos >= 2); // Shortest valid heading would be "# x". Knowing that calling code would have thrown otherwise.
+  if (descriptionPos >= line.length - 1) throw _invalidFormatError(line, lineNo, 'header line does not contain a description');
+  const matchThresholdPos = line.indexOf('>');
+  const description = matchThresholdPos === -1 ? line.substring(descriptionPos) : line.substring(descriptionPos, matchThresholdPos);
+  if (matchThresholdPos !== -1) matchThreshold = _parseMatchThreshold(line, matchThresholdPos, lineNo);
+  const params = findParamsInUtterance(normalizeUtterance(description));
+  return { description, params, matchThreshold };
 }
-/* v8 ignore end */
+
+function _addChildNode(headerLine:string, parent:MeaningMapNode, id:number, lineNo:number):MeaningMapNode {
+  const {description, params, matchThreshold} = _parseHeaderLine(headerLine, parent.matchThreshold, lineNo);
+  const child = { id, description, params, matchVectorGroup: UNITIALIZED_VECTOR_GROUP, matchThreshold, parent, children: [] };
+  parent.children.push(child);
+  return child;
+}
+
+function _addSiblingNode(headerLine:string, currentNode:MeaningMapNode, id:number, lineNo:number):MeaningMapNode {
+  assertNonNullable(currentNode.parent);
+  return _addChildNode(headerLine, currentNode.parent, id, lineNo);
+}
+
+function _findAncestorNode(currentNode:MeaningMapNode, generationCount:number):MeaningMapNode {
+  let hopsLeft = generationCount;
+  let node:MeaningMapNode = currentNode;
+  while(hopsLeft > 0 && node.parent !== null) {
+    node = node.parent;
+    --hopsLeft;
+  }
+  assert(hopsLeft === 0); // From knowledge of calling code, it should be impossible to request a depth smaller than 1.
+  return node;
+}
+
+function _descriptionToName(description:string):string {
+  const utt = normalizeUtterance(description); // Makes casing more consistent.
+  return utt.replaceAll(' ', '_');
+}
+
+function _invalidFormatError(line:string, lineNo:number, message:string) {
+  return new Error(`Line #${lineNo}: "${line}" ${message}.`);
+}
+
+function _addNodeToIndexes(node:MeaningMapNode, ids:{[name:string]:number}, nodes:{[id:number]:MeaningMapNode}, lineNo:number) {
+  const name = _descriptionToName(node.description);
+  if (ids[name] !== undefined) throw _invalidFormatError(node.description, lineNo, 'duplicate description found for heading');
+  ids[name] = node.id;
+  nodes[node.id] = node;
+}
+
+function _addReplacersForNode(node:MeaningMapNode, replacers:string[]) {
+  node.params.forEach(param => {
+    if (!replacers.includes(param)) replacers.push(param);
+  });
+}
+
+async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[]) {
+  const sentences = sentencesToEmbed.map(ste => ste.sentence);
+  const vectors = await embedSentences(sentences);
+  assert(vectors.length === sentences.length);
+  for(let sentenceI = 0; sentenceI < sentences.length; ++sentenceI) {
+    const node = sentencesToEmbed[sentenceI].node;
+    if (node.matchVectorGroup === UNITIALIZED_VECTOR_GROUP) node.matchVectorGroup = [];
+    node.matchVectorGroup.push(vectors[sentenceI]);
+  }
+}
+
+export async function loadMeaningMap(text:string):Promise<MeaningMap> {
+  const lines = _textToLines(text);
+  let nextId = 1;
+  let depth = 0;
+  const sentencesToEmbed:SentenceToEmbed[] = [];
+  const root:MeaningMapNode = _createRootNode();
+  const replacers:string[] = [];
+  const ids:{[name:string]:number} = {};
+  const nodes:{[id:number]:MeaningMapNode} = {};
+  let currentNode = root;
+  for(let lineI = 0; lineI < lines.length; ++lineI) {
+    const line = lines[lineI], lineNo = lineI+1;
+    if (line.startsWith('#')) {
+      const nextDepth = _getLineDepth(line);
+      if (nextDepth === -1) throw _invalidFormatError(line, lineNo, 'invalid section header syntax');
+      const depthDelta = nextDepth - depth;
+      if (depthDelta > 1) throw _invalidFormatError(line, lineNo, 'increases in depth by more than one');
+      if (depthDelta === 1) {
+        currentNode = _addChildNode(line, currentNode, nextId++, lineNo);
+      } else if (depthDelta === 0) {
+        currentNode = _addSiblingNode(line, currentNode, nextId++, lineNo);
+      } else {
+        assert(depthDelta < 0);
+        currentNode = _findAncestorNode(currentNode, -depthDelta + 1);
+        currentNode = _addChildNode(line, currentNode, nextId++, lineNo);
+      }
+      _addReplacersForNode(currentNode, replacers);
+      _addNodeToIndexes(currentNode, ids, nodes, lineNo);
+      depth = nextDepth;
+    } else {
+      if (currentNode === root) throw _invalidFormatError(line, lineNo, 'comes before a section head');
+      if (!isValidUtterance(line)) throw _invalidFormatError(line, lineNo, 'is not in expected utterance format');
+      sentencesToEmbed.push({sentence:line, node:currentNode});
+    }
+  }
+  await _addMatchVectorGroups(sentencesToEmbed);
+  return {root, ids, nodes, replacers};
+}

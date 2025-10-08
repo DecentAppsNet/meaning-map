@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createSubsetIndex, addTrumpsForSubsetsAndSupersets, areMeaningMapTrumpsValid } from '../supersetUtil';
 import MeaningClassifications from '@/impexp/types/MeaningClassifications';
-import MeaningMap, { duplicateMeaningMap } from '@/impexp/types/MeaningMap';
+import MeaningMap, { duplicateMeaningMap } from '@/impexp/types/MeaningMapOld';
 import SubsetIndex from '../types/SubsetIndex';
 import { disableConsoleError, reenableConsoleError } from '@/common/testUtil';
 

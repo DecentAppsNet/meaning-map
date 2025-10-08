@@ -1,13 +1,13 @@
 import { isValidUtterance } from "@/classification/utteranceUtil";
 import MeaningClassifications from "@/impexp/types/MeaningClassifications";
-import MeaningMap from "@/impexp/types/MeaningMap";
+import MeaningMap from "@/impexp/types/MeaningMapOld";
 import { assert } from '@/common/assertUtil';
 import { concatMatchWords, createFirstTryCombination, findNextTryCombination } from "./tryCombinationUtil";
 import WordUsageMap from "../classification/types/WordUsageMap";
 import TryCombination from "./types/TryCombination";
 import { importMeaningClassifications } from "@/impexp/meaningClassificationsImporter";
 import { endSection, log, setStatus, startSection } from "@/common/describeLog";
-import { exportMeaningMap } from "@/impexp/meaningMapExporter";
+import { exportMeaningMap } from "@/impexp/meaningMapOldExporter";
 import { generateWordUsageMap } from "@/classification/wordUsageUtil";
 import { countUtterances, doMatchWordsMatchOtherMeanings } from "@/classification/classifyUtil";
 import { addRule } from "./ruleOperationsUtil";

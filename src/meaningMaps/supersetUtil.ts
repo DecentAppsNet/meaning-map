@@ -47,7 +47,7 @@ import { doMatchWordsMatchUtterance } from "./matchUtil"
 import SubsetIndex from "./types/SubsetIndex";
 import Subset from "./types/Subset";
 import RuleReferenceIndex from "./types/RuleReferenceIndex";
-import MeaningMap from "@/impexp/types/MeaningMap";
+import MeaningMap from "@/impexp/types/MeaningMapOld";
 
 function _findAllSupersetUtterances(meaningIds:string[], utterance:string, classifications:MeaningClassifications, excludeMeaningId:string):string[] {
   const matchWords = utteranceToWords(utterance);
