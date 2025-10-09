@@ -1,28 +1,27 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-
-import MeaningClassifications from '@/impexp/types/MeaningClassifications';
-import { generateMeaningMapFromClassifications } from '../meaningMapOldUtil';
-import { exampleClassifications, exampleMeaningMap } from './data/classificationsTestData';
-import MeaningMap from '@/impexp/types/MeaningMapOld';
-import { flushLog } from '@/common/describeLog';
+import { describe, expect, it, beforeAll, beforeEach } from 'vitest';
+import exampleMeaningMapText from './data/exampleMeaningMap';
+import { loadMeaningMap } from '@/impexp/meaningMapImporter';
+import MeaningMap, { duplicateMeaningMap } from '../types/MeaningMap';
+import { matchMeaning } from '../meaningMapUtil';
+import { initEmbedder, isEmbedderInitialized } from '@/transformersJs/transformersEmbedder';
 
 describe('meaningMapUtil', () => {
-  describe('generateMeaningMapFromClassifications()', () => {
-    let classifications:MeaningClassifications;
+  let originalMeaningMap:MeaningMap;
+  let meaningMap:MeaningMap;
 
-    beforeAll(() => {
-      classifications = JSON.parse(JSON.stringify(exampleClassifications));
-    });
+  beforeAll(async () => {
+    if (!isEmbedderInitialized()) await initEmbedder();
+    originalMeaningMap = await loadMeaningMap(exampleMeaningMapText);
+  }, 120000);
 
-    beforeEach(() => {
-      expect(classifications).toEqual(exampleClassifications);
-    });
+  beforeEach(() => {
+    meaningMap = duplicateMeaningMap(originalMeaningMap);
+  });
 
-    const DISPLAY_DESCRIBE_LOG = false;
-    it('generates meaning map from populated classifications', () => {
-      const meaningMap:MeaningMap = generateMeaningMapFromClassifications(classifications);
-      if (DISPLAY_DESCRIBE_LOG) console.log(flushLog());
-      expect(meaningMap).toEqual(exampleMeaningMap);
+  describe('matchMeaning()', () => {
+    it('matches a simple utterance', async () => {
+      const match = await matchMeaning('i want to add this', meaningMap);
+      expect(match).toEqual({ meaningId:meaningMap.ids.adding_only, paramValues:{} });
     });
   });
 });

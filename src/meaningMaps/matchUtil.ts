@@ -1,7 +1,7 @@
 import { assert } from '@/common/assertUtil';
 import { isPlainUtterance, isValidUtterance, utteranceToWords } from "@/classification/utteranceUtil";
 import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
-import MeaningMatch from "./types/MeaningMatch";
+import MeaningMatch from "./types/MeaningMatchOld";
 import ReplacedValues from "@/replacement/types/ReplacedValues";
 import MeaningMap from '@/impexp/types/MeaningMapOld';
 import RuleReference from './types/RuleReference';

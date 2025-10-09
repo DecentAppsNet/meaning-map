@@ -150,5 +150,7 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
     }
   }
   await _addMatchVectorGroups(sentencesToEmbed);
-  return {root, ids, nodes, replacers};
+  const meaningMap = {root, ids, nodes, replacers};
+  Object.freeze(meaningMap);
+  return meaningMap;
 }

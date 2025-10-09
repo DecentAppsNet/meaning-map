@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 import { doMatchWordsMatchUtterance, matchMeaning } from "../matchUtil";
 import { exampleClassifications } from "./data/classificationsTestData";
-import { doesMeaningMapCorrectlyMatchClassifications, generateMeaningMapFromClassifications } from "../meaningMapOldUtil";
+import { doesMeaningMapCorrectlyMatchClassifications, generateMeaningMapFromClassifications } from "../meaningMapUtilOld";
 import MeaningClassifications, { duplicateMeaningClassifications } from "@/impexp/types/MeaningClassifications";
 import MeaningMap, { duplicateMeaningMap } from "@/impexp/types/MeaningMapOld";
 import { flushLog } from '@/common/describeLog';

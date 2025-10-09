@@ -1,7 +1,9 @@
 import ReplacedValues from "@/replacement/types/ReplacedValues";
+import RuleReference from "./RuleReference";
 
 type MeaningMatch = {
-  meaningId:number,
+  meaningId:string,
+  ruleReference:RuleReference,
   paramValues:ReplacedValues
 }
 
