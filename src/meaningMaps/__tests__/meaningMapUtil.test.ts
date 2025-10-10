@@ -23,5 +23,10 @@ describe('meaningMapUtil', () => {
       const match = await matchMeaning('i want to add this', meaningMap);
       expect(match).toEqual({ meaningId:meaningMap.ids.adding_only, paramValues:{} });
     });
+
+    it('returns null for non-matching utterance', async () => {
+      const match = await matchMeaning('this does not match', meaningMap);
+      expect(match).toBeNull();
+    });
   });
 });

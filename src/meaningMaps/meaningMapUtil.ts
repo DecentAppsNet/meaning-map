@@ -8,7 +8,7 @@ import { embedSentence } from "@/transformersJs/transformersEmbedder";
 import { findBestVectorGroupMatch } from "@/embeddings/vectorGroupUtil";
 import MeaningMapNode from "./types/MeaningMapNode";
 
-async function _findBestMeaningMapNodeRecursively(utteranceVector:UnitVector, currentNode:MeaningMapNode):Promise<MeaningMapNode|null> {
+async function _findBestMeaningMapNodeRecursively(utteranceVector:UnitVector, currentNode:MeaningMapNode):Promise<MeaningMapNode> {
   if (!currentNode.children.length) return currentNode;
   const childVectors = currentNode.children.map(c => c.matchVectorGroup);
   const nextNodeI = findBestVectorGroupMatch(utteranceVector, childVectors, currentNode.matchThreshold);
@@ -22,5 +22,5 @@ export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap)
   const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance);
   const utteranceVector:UnitVector = await embedSentence(replacedUtterance);
   const bestNode = await _findBestMeaningMapNodeRecursively(utteranceVector, meaningMap.root);
-  return bestNode !== null ? { meaningId:bestNode.id, paramValues:replacedValues } : null;
+  return bestNode === meaningMap.root ? null : { meaningId:bestNode.id, paramValues:replacedValues };
 }

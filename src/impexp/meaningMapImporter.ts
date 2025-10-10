@@ -3,6 +3,7 @@ import MeaningMap from "../meaningMaps/types/MeaningMap";
 import { assert, assertNonNullable } from '@/common/assertUtil';
 import { embedSentences } from "@/transformersJs/transformersEmbedder";
 import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/classification/utteranceUtil";
+import { readTextFile } from "@/common/fileUtil";
 
 const DEFAULT_MATCH_THRESHOLD = .6;
 
@@ -50,7 +51,7 @@ function _parseHeaderLine(line:string, defaultMatchThresholdId:number, lineNo:nu
   const descriptionPos = _getLineDepth(line) + 1;
   let matchThreshold = defaultMatchThresholdId;
   assert(descriptionPos >= 2); // Shortest valid heading would be "# x". Knowing that calling code would have thrown otherwise.
-  if (descriptionPos >= line.length - 1) throw _invalidFormatError(line, lineNo, 'header line does not contain a description');
+  if (descriptionPos >= line.length) throw _invalidFormatError(line, lineNo, 'header line does not contain a description');
   const matchThresholdPos = line.indexOf('>');
   const description = matchThresholdPos === -1 ? line.substring(descriptionPos) : line.substring(descriptionPos, matchThresholdPos);
   if (matchThresholdPos !== -1) matchThreshold = _parseMatchThreshold(line, matchThresholdPos, lineNo);
@@ -154,3 +155,17 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
   Object.freeze(meaningMap);
   return meaningMap;
 }
+
+/* v8 ignore start */
+export async function importMeaningMapFromFile(filepath:string):Promise<MeaningMap> {
+  const text = await readTextFile(filepath);
+  return loadMeaningMap(text);
+}
+
+export async function importMeaningMap(url:string):Promise<MeaningMap> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch meaning map from URL: ${response.status} ${response.statusText}`);
+  const text = await response.text();
+  return loadMeaningMap(text);
+}
+/* v8 ignore end */
