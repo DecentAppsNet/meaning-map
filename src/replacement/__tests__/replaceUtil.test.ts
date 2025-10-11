@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { unreplaceWithPlaceholders } from "../replaceUtil";
-import { isPlainUtterance } from "@/classification/utteranceUtil";
+import { unreplaceWithPlaceholders } from "../replaceUtilOld";
+import { isPlainUtterance } from "@/sentenceParsing/utteranceUtil";
 
 describe("replaceUtil", () => {
   describe("unreplaceWithPlaceholders", () => {

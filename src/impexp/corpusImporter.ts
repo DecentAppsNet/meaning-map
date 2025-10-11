@@ -1,4 +1,4 @@
-import { normalizeUtterance } from "@/classification/utteranceUtil";
+import { normalizeUtterance } from "@/sentenceParsing/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
 
 function _normalizeUtterance(utterance:string):string {

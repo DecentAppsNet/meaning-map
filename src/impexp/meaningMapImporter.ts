@@ -2,7 +2,7 @@ import MeaningMapNode, { UNITIALIZED_VECTOR_GROUP } from "../meaningMaps/types/M
 import MeaningMap from "../meaningMaps/types/MeaningMap";
 import { assert, assertNonNullable } from '@/common/assertUtil';
 import { embedSentences } from "@/transformersJs/transformersEmbedder";
-import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/classification/utteranceUtil";
+import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/sentenceParsing/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
 
 const DEFAULT_MATCH_THRESHOLD = .6;

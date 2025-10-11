@@ -1,5 +1,5 @@
 import { assert, assertNonNullable } from '../common/assertUtil';
-import { isMatchingParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '../classification/utteranceUtil';
+import { isMatchingParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '../sentenceParsing/utteranceUtil';
 import ReplacedValues from './types/ReplacedValues';
 
 const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 

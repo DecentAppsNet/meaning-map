@@ -1,11 +1,11 @@
 import { makeReplacements, TextReplacement } from '../common/stringUtil';
-import SentenceToken from '../classification/types/SentenceToken';
-import TokenSpan from '../classification/types/TokenSpan';
-import { combineAdjacentAndOverlappingTokenSpans } from '../classification/spanUtil';
-import { findPrenominalModifiers, getSentenceTokens, combineConjunctionConnectedNounGroups } from '../classification/sentenceUtil';
+import SentenceToken from '../sentenceParsing/types/SentenceToken';
+import TokenSpan from '../sentenceParsing/types/TokenSpan';
+import { combineAdjacentAndOverlappingTokenSpans } from '../sentenceParsing/spanUtil';
+import { findPrenominalModifiers, getSentenceTokens, combineConjunctionConnectedNounGroups } from '../sentenceParsing/sentenceUtil';
 import { assert } from '../common/assertUtil';
 import { getPackableSet } from '@/impexp/datasetUtil';
-import { isMatchingParam, isParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '@/classification/utteranceUtil';
+import { isMatchingParam, isParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '@/sentenceParsing/utteranceUtil';
 import ReplacedValues from './types/ReplacedValues';
 
 async function _mightBeAPhysicalObject(value:string, partOfSpeech:string):Promise<boolean> {

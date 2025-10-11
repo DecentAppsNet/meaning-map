@@ -1,8 +1,8 @@
-import { isPlainUtterance } from "@/classification/utteranceUtil";
+import { isPlainUtterance } from "@/sentenceParsing/utteranceUtil";
 import MeaningMap from "./types/MeaningMap";
 import MeaningMatch from "./types/MeaningMatch";
 import { assert } from '@/common/assertUtil';
-import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
+import { makeUtteranceReplacements } from "@/replacement/replaceUtilOld";
 import UnitVector from "@/embeddings/types/UnitVector";
 import { embedSentence } from "@/transformersJs/transformersEmbedder";
 import { findBestVectorGroupMatch } from "@/embeddings/vectorGroupUtil";
