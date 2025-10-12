@@ -3,7 +3,7 @@ import ReplacedValues from './types/ReplacedValues';
 import Replacer, { duplicateReplacer } from './types/Replacer';
 import ItemsReplacer from './replaceItems';
 import NumberReplacer from './replaceNumbers';
-import { assert } from '@/common/assertUtil';
+import { assert, assertNonNullable } from '@/common/assertUtil';
 
 const theRegisteredReplacers:{[id:string]:Replacer} = {
   [ItemsReplacer.id]:ItemsReplacer,
@@ -14,7 +14,7 @@ function _combineReplacedValues(fromValues:ReplacedValues, intoValues:ReplacedVa
   const fromParams = Object.keys(fromValues);
   for(let i = 0; i < fromParams.length; ++i) {
     const fromParam = fromParams[i];
-    if (intoValues[fromParam] !== undefined) throw new Error(`Non-unique param ${fromParam} unexpected. Would overwrite existing value.`);
+    assert(fromValues[fromParam] !== undefined, `Non-unique param ${fromParam} unexpected. Would overwrite existing value.`);
     intoValues[fromParam] = fromValues[fromParam];
   }
 }
@@ -58,6 +58,48 @@ function _findReplacer(replacers:Replacer[], id:string):number {
   return -1;
 }
 
+function _getReplacersForSorting(replacerIds:string[]):{[id:string]:Replacer} {
+  // Get replacers for all passed IDs.
+  let replacers:{[id:string]:Replacer} = {};
+  for(let i = 0; i < replacerIds.length; ++i) {
+    const id = replacerIds[i];
+    let replacer = theRegisteredReplacers[id];
+    if (!replacer) throw new Error(`No registered replacer for ${id}.`);
+    replacer = duplicateReplacer(replacer);
+    replacer.precedesReplacers = replacer.precedesReplacers.filter(precedeId => replacerIds.includes(precedeId)); // Prune IDs that aren't relevant.
+    replacers[id] = replacer;
+  }
+
+  function _addTransitiveIdsRecursively(startReplacer:Replacer, nextReplacer:Replacer) {
+    const nextPrecedeIds = [...nextReplacer.precedesReplacers]; // Make a copy so that loop below is unaffected by mutations.
+    for(let i = 0; i < nextPrecedeIds.length; ++i) {
+      const nextPrecedeId = nextPrecedeIds[i];
+      if (nextPrecedeId === startReplacer.id) { 
+        console.warn(`Replacer for ${startReplacer.id} has a cyclic dependency that means not all precede rules can be honored.`); 
+        continue;
+      }
+      if (startReplacer !== nextReplacer) {
+        if (startReplacer.precedesReplacers.includes(nextPrecedeId)) {
+          console.warn(`Replacer for ${nextPrecedeId} has a cyclic dependency that means not all precede rules can be honored.`);
+          continue;
+        }
+        startReplacer.precedesReplacers.push(nextPrecedeId);
+      }
+      _addTransitiveIdsRecursively(startReplacer, replacers[nextPrecedeId]);
+    }
+  }
+
+  // Add transitive preceding IDs, e.g. if A < B and B < C thehn A < B, C.
+  for(let i = 0; i < replacerIds.length; ++i) {
+    const id = replacerIds[i];
+    const replacer = replacers[id];
+    _addTransitiveIdsRecursively(replacer, replacer);
+    Object.freeze(replacer);
+  }
+
+  return replacers;
+}
+
 /**
  * For specified replacers, verifies they are registered, and returns them in an order that respects sequencing 
  * rules if possible. (Cyclic sequencing rules would make this impossible, in which case a best try is made.)
@@ -69,14 +111,13 @@ function _findReplacer(replacers:Replacer[], id:string):number {
  * Array of Replacers in an order that respects sequencing rules if possible.
  */
 export function getReplacers(replacerIds:string[]):Replacer[] {
+  let replacersForSorting:{[id:string]:Replacer} = _getReplacersForSorting(replacerIds);
   let replacers:Replacer[] = [];
   for(let i = 0; i < replacerIds.length; ++i) {
     const id = replacerIds[i];
-    let replacer = theRegisteredReplacers[id];
-    if (!replacer) throw new Error(`No registered replacer for ${id}.`);
-    replacer = duplicateReplacer(replacer);
-    Object.freeze(replacer);
-
+    let replacer = replacersForSorting[id];
+    assertNonNullable(replacer);
+    
     let insertBeforeIndex = replacers.length;
     for(let j = 0; j < replacer.precedesReplacers.length; ++j) {
       const precedeId = replacer.precedesReplacers[j];
@@ -91,6 +132,7 @@ export function getReplacers(replacerIds:string[]):Replacer[] {
       replacers.splice(insertBeforeIndex, 0, replacer);
     }
   }
+  Object.freeze(replacers);
   return replacers;
 }
 
@@ -109,7 +151,7 @@ export async function makeUtteranceReplacements(plainUtterance:string, replacers
   const replacedValues:ReplacedValues = {};
   let replacedUtterance = plainUtterance;
   for(let i = 0; i < replacers.length; ++i) {
-    const [nextUtterance, nextReplacedValues] = await replacers[i].onReplace(plainUtterance);
+    const [nextUtterance, nextReplacedValues] = await replacers[i].onReplace(replacedUtterance);
     _combineReplacedValues(nextReplacedValues, replacedValues);
     replacedUtterance = nextUtterance;
   }

@@ -7,7 +7,7 @@ export function duplicateUnitVectorGroup(group:UnitVectorGroup):UnitVectorGroup 
 }
 
 export function freezeUnitVectorGroup(group:UnitVectorGroup):void {
-  group.forEach(v => Object.freeze(v));
+  // UnitVector elements can't be frozen because they are Float32Arrays.
   Object.freeze(group);
 }
 

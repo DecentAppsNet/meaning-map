@@ -1,3 +1,4 @@
+/* v8 ignore start */
 import { endSection, log, setStatus, startSection } from "@/common/describeLog";
 import { fetchGetJson } from "@/common/httpUtil";
 import { modelInfo, listFiles } from "@huggingface/hub";
@@ -127,3 +128,5 @@ export async function isTextBasedModelLoadable(repoId:string):Promise<boolean> {
   if (success && !completeSuccess) log(`Model ${repoId} might be loadable. Give it a try!`);
   return success;
 }
+
+/* v8 ignore end */

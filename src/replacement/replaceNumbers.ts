@@ -79,7 +79,7 @@ export async function getNumberTextForEmbedding(replacedUtterance:string):Promis
   assert(isValidUtterance(replacedUtterance));
   const words = utteranceToWords(replacedUtterance);
   const unreplacedWords = words.map(word => {
-    return isMatchingParam(word, 'NUMBER') ? 'thirty-seven' : word;
+    return isMatchingParam(word, 'NUMBER') ? 'thirty seven' : word;
   });
   return wordsToUtterance(unreplacedWords);
 }

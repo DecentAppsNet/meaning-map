@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeUtterance, isUtteranceNormalized, findParamsInUtterance,
-  isMatchingParam, utteranceToWords, isValidUtterance, isPlainUtterance, wordsToUtterance } from '../utteranceUtil';
+  isMatchingParam, utteranceToWords, isValidUtterance, isPlainUtterance, wordsToUtterance, 
+  punctuatedToUtterance} from '../utteranceUtil';
 
 describe('utteranceUtil', () => {
   describe('normalizeUtterance()', () => {
@@ -111,6 +112,22 @@ describe('utteranceUtil', () => {
 
     it('finds multiple ALLCAPS tokens in order', () => {
       expect(findParamsInUtterance('move ITEMS to NUMBER')).toEqual(['ITEMS', 'NUMBER']);
+    });
+  });
+
+  describe('punctuatedToUtterance()', () => {
+    it('removes ASCII punctuation and lowercases text', () => {
+      expect(punctuatedToUtterance('Hello, world!')).toBe('hello world');
+      expect(punctuatedToUtterance('This... is a test.')).toBe('this is a test');
+    });
+
+    it('handles mixed punctuation and parentheses', () => {
+      expect(punctuatedToUtterance('Hi! (How are you?)')).toBe('hi how are you');
+      expect(punctuatedToUtterance('A: B; C, D.')).toBe('a b c d');
+    });
+
+    it('handles unicode punctuation characters', () => {
+      expect(punctuatedToUtterance('«Hello» “world”…')).toBe('hello world');
     });
   });
 });

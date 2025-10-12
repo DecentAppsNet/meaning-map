@@ -31,9 +31,7 @@ export function freezeMeaningMapNode(node:MeaningMapNode):void {
   Object.freeze(node.params);
   Object.freeze(node.children);
   freezeUnitVectorGroup(node.matchVectorGroup);
-  for(const child of node.children) {
-    freezeMeaningMapNode(child);
-  }
+  node.children.forEach(freezeMeaningMapNode);
 }
 
 export default MeaningMapNode;

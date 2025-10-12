@@ -1,5 +1,5 @@
 import Replacer from "@/replacement/types/Replacer";
-import MeaningMapNode, { duplicateMeaningMapNode } from "./MeaningMapNode";
+import MeaningMapNode, { duplicateMeaningMapNode, freezeMeaningMapNode } from "./MeaningMapNode";
 
 type MeaningMap = {
   root:MeaningMapNode;
@@ -14,11 +14,7 @@ function _populateNodeIndexRecursively(node:MeaningMapNode, nodes:{[id:number]:M
 }
 
 export function freezeMeaningMap(meaningMap:MeaningMap):void {
-  function _deepFreezeNodeRecursively(node:MeaningMapNode) {
-    Object.freeze(node);
-    node.children.forEach(c => _deepFreezeNodeRecursively(c));
-  }
-  _deepFreezeNodeRecursively(meaningMap.root);
+  freezeMeaningMapNode(meaningMap.root);
   Object.freeze(meaningMap.replacers);
   Object.freeze(meaningMap.ids);
   Object.freeze(meaningMap.nodes);
@@ -33,7 +29,6 @@ export function duplicateMeaningMap(meaningMap:MeaningMap):MeaningMap {
   const nodes:{[id:number]:MeaningMapNode} = {};
   _populateNodeIndexRecursively(root, nodes);
   const nextMeaningMap:MeaningMap = {root, replacers, ids, nodes};
-  freezeMeaningMap(nextMeaningMap);
   return nextMeaningMap;
 }
 
