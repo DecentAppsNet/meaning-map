@@ -5,7 +5,7 @@ import { embedSentences } from "@/transformersJs/transformersEmbedder";
 import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/sentenceParsing/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
 import Replacer from "@/replacement/types/Replacer";
-import { getReplacers, paramToReplacerId } from "@/replacement/replaceUtil";
+import { getReplacers, getTextForEmbedding, paramToReplacerId } from "@/replacement/replaceUtil";
 
 const DEFAULT_MATCH_THRESHOLD = .6;
 
@@ -20,6 +20,7 @@ function _createRootNode():MeaningMapNode {
     description: 'ROOT',
     params: [],
     matchVectorGroup: [],
+    matchVectorDescriptions: [],
     matchThreshold: DEFAULT_MATCH_THRESHOLD,
     parent: null,
     children: []
@@ -63,7 +64,7 @@ function _parseHeaderLine(line:string, defaultMatchThresholdId:number, lineNo:nu
 
 function _addChildNode(headerLine:string, parent:MeaningMapNode, id:number, lineNo:number):MeaningMapNode {
   const {description, params, matchThreshold} = _parseHeaderLine(headerLine, parent.matchThreshold, lineNo);
-  const child = { id, description, params, matchVectorGroup: UNITIALIZED_VECTOR_GROUP, matchThreshold, parent, children: [] };
+  const child = { id, description, params, matchVectorDescriptions: [], matchVectorGroup: UNITIALIZED_VECTOR_GROUP, matchThreshold, parent, children: [] };
   parent.children.push(child);
   return child;
 }
@@ -107,14 +108,24 @@ function _addReplacerIdsForNode(node:MeaningMapNode, replacerIds:string[]) {
   });
 }
 
-async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[]) {
-  const sentences = sentencesToEmbed.map(ste => ste.sentence);
+async function _getSentencesToEmbed(sentencesToEmbed:SentenceToEmbed[], replacers:Replacer[]):Promise<string[]> {
+  const sentences:string[] = [];
+  for(const ste of sentencesToEmbed) {
+    let sentence = await getTextForEmbedding(ste.sentence, replacers);
+    sentences.push(sentence);
+  }
+  return sentences;
+}
+
+async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[], replacers:Replacer[]) {
+  const sentences = await _getSentencesToEmbed(sentencesToEmbed, replacers);
   const vectors = await embedSentences(sentences);
   assert(vectors.length === sentences.length);
   for(let sentenceI = 0; sentenceI < sentences.length; ++sentenceI) {
     const node = sentencesToEmbed[sentenceI].node;
     if (node.matchVectorGroup === UNITIALIZED_VECTOR_GROUP) node.matchVectorGroup = [];
     node.matchVectorGroup.push(vectors[sentenceI]);
+    node.matchVectorDescriptions.push(sentences[sentenceI]);
   }
 }
 
@@ -153,9 +164,9 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
       sentencesToEmbed.push({sentence:line, node:currentNode});
     }
   }
-  await _addMatchVectorGroups(sentencesToEmbed);
   const replacers:Replacer[] = getReplacers(replacerIds);
-  const meaningMap = {root, ids, nodes, replacers};
+  await _addMatchVectorGroups(sentencesToEmbed, replacers);
+  const meaningMap:MeaningMap = {root, ids, nodes, replacers};
   freezeMeaningMap(meaningMap);
   return meaningMap;
 }

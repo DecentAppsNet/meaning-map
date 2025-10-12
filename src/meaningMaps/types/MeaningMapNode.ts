@@ -7,6 +7,7 @@ type MeaningMapNode = {
   description:string,
   params:string[], // Any params found in the description.
   matchVectorGroup:UnitVectorGroup,
+  matchVectorDescriptions:string[], // Descriptions of the sentences used to create the vectors in matchVectorGroup.
   matchThreshold:number, // From the > syntax in header.
   parent:MeaningMapNode|null, // Parent/children relationships indicated by markdown headings.
   children:MeaningMapNode[]
@@ -18,6 +19,7 @@ export function duplicateMeaningMapNode(node:MeaningMapNode, parent:MeaningMapNo
     description: node.description,
     params: [...node.params],
     matchVectorGroup: duplicateUnitVectorGroup(node.matchVectorGroup),
+    matchVectorDescriptions: [...node.matchVectorDescriptions],
     matchThreshold: node.matchThreshold,
     parent,
     children: []
