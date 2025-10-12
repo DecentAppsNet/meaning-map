@@ -1,6 +1,7 @@
 import { assert, assertNonNullable } from '../common/assertUtil';
 import { isMatchingParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '../sentenceParsing/utteranceUtil';
 import ReplacedValues from './types/ReplacedValues';
+import Replacer from './types/Replacer';
 
 const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy',
@@ -28,7 +29,7 @@ function _addWordToReplacedValue(paramName:string|null, word:string, replacedVal
 
 // Only supporting positive integers between zero and a trillion. This is a loose check that doesn't care about the grammar of numbers or parsing a value, 
 // e.g. "two forty" will be considered a number. Lists of multiple numbers will end up being recognized as a single number.
-export function replaceNumbers(utterance:string):[replacedUtterance:string, replacedValues:ReplacedValues] {
+export async function replaceNumbers(utterance:string):Promise<[replacedUtterance:string, replacedValues:ReplacedValues]> {
   assert(isValidUtterance(utterance));
   const replacedValues:ReplacedValues = {};
   const words = utteranceToWords(utterance);
@@ -74,12 +75,20 @@ export function replaceNumbers(utterance:string):[replacedUtterance:string, repl
   return [replacedUtterance, replacedValues];
 }
 
-// Useful for testing. Converts "NUMBER" and "NUMBERn" with placeholders that are expected to
-// symmetrically be replaced back to the original values if run through replaceNumbers().
-export function unreplaceNumbersWithPlaceholders(utterance:string):string {
-  const words = utteranceToWords(utterance);
+export async function getNumberTextForEmbedding(replacedUtterance:string):Promise<string> {
+  assert(isValidUtterance(replacedUtterance));
+  const words = utteranceToWords(replacedUtterance);
   const unreplacedWords = words.map(word => {
-    return isMatchingParam(word, 'NUMBER') ? 'three' : word;
+    return isMatchingParam(word, 'NUMBER') ? 'thirty-seven' : word;
   });
   return wordsToUtterance(unreplacedWords);
 }
+
+const REPLACER:Replacer = {
+  id: 'NUMBER',
+  precedesReplacers: [],
+  onGetTextForEmbedding: getNumberTextForEmbedding,
+  onReplace: replaceNumbers,
+}
+
+export default REPLACER;

@@ -2,7 +2,7 @@ import { isPlainUtterance } from "@/sentenceParsing/utteranceUtil";
 import MeaningMap from "./types/MeaningMap";
 import MeaningMatch from "./types/MeaningMatch";
 import { assert } from '@/common/assertUtil';
-import { makeUtteranceReplacements } from "@/replacement/replaceUtilOld";
+import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import UnitVector from "@/embeddings/types/UnitVector";
 import { embedSentence } from "@/transformersJs/transformersEmbedder";
 import { findBestVectorGroupMatch } from "@/embeddings/vectorGroupUtil";
@@ -19,7 +19,7 @@ async function _findBestMeaningMapNodeRecursively(utteranceVector:UnitVector, cu
 
 export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
   assert(isPlainUtterance(plainUtterance));
-  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance);
+  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance, meaningMap.replacers);
   const utteranceVector:UnitVector = await embedSentence(replacedUtterance);
   const bestNode = await _findBestMeaningMapNodeRecursively(utteranceVector, meaningMap.root);
   return bestNode === meaningMap.root ? null : { meaningId:bestNode.id, paramValues:replacedValues };

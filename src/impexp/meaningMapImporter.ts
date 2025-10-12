@@ -1,9 +1,11 @@
 import MeaningMapNode, { UNITIALIZED_VECTOR_GROUP } from "../meaningMaps/types/MeaningMapNode";
-import MeaningMap from "../meaningMaps/types/MeaningMap";
+import MeaningMap, { freezeMeaningMap } from "../meaningMaps/types/MeaningMap";
 import { assert, assertNonNullable } from '@/common/assertUtil';
 import { embedSentences } from "@/transformersJs/transformersEmbedder";
 import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/sentenceParsing/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
+import Replacer from "@/replacement/types/Replacer";
+import { getReplacers, paramToReplacerId } from "@/replacement/replaceUtil";
 
 const DEFAULT_MATCH_THRESHOLD = .6;
 
@@ -98,9 +100,10 @@ function _addNodeToIndexes(node:MeaningMapNode, ids:{[name:string]:number}, node
   nodes[node.id] = node;
 }
 
-function _addReplacersForNode(node:MeaningMapNode, replacers:string[]) {
+function _addReplacerIdsForNode(node:MeaningMapNode, replacerIds:string[]) {
   node.params.forEach(param => {
-    if (!replacers.includes(param)) replacers.push(param);
+    const replacerId = paramToReplacerId(param);
+    if (!replacerIds.includes(replacerId)) replacerIds.push(replacerId);
   });
 }
 
@@ -121,7 +124,7 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
   let depth = 0;
   const sentencesToEmbed:SentenceToEmbed[] = [];
   const root:MeaningMapNode = _createRootNode();
-  const replacers:string[] = [];
+  const replacerIds:string[] = [];
   const ids:{[name:string]:number} = {};
   const nodes:{[id:number]:MeaningMapNode} = {};
   let currentNode = root;
@@ -141,7 +144,7 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
         currentNode = _findAncestorNode(currentNode, -depthDelta + 1);
         currentNode = _addChildNode(line, currentNode, nextId++, lineNo);
       }
-      _addReplacersForNode(currentNode, replacers);
+      _addReplacerIdsForNode(currentNode, replacerIds);
       _addNodeToIndexes(currentNode, ids, nodes, lineNo);
       depth = nextDepth;
     } else {
@@ -151,8 +154,9 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
     }
   }
   await _addMatchVectorGroups(sentencesToEmbed);
+  const replacers:Replacer[] = getReplacers(replacerIds);
   const meaningMap = {root, ids, nodes, replacers};
-  Object.freeze(meaningMap);
+  freezeMeaningMap(meaningMap);
   return meaningMap;
 }
 

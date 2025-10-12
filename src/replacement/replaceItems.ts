@@ -7,6 +7,8 @@ import { assert } from '../common/assertUtil';
 import { getPackableSet } from '@/impexp/datasetUtil';
 import { isMatchingParam, isParam, isValidUtterance, utteranceToWords, wordsToUtterance } from '@/sentenceParsing/utteranceUtil';
 import ReplacedValues from './types/ReplacedValues';
+import Replacer from './types/Replacer';
+import numberReplacer from './replaceNumbers';
 
 async function _mightBeAPhysicalObject(value:string, partOfSpeech:string):Promise<boolean> {
   if (partOfSpeech !== 'NOUN') return false; // TODO remove this once packables.txt is finished being generated.
@@ -57,12 +59,20 @@ export async function replaceItems(utterance:string):Promise<[replacedUtterance:
   return [replacedUtterance, replacedValues];
 }
 
-// Useful for testing. Converts "ITEMS" and "ITEMSn" with placeholders that are expected to
-// symmetrically be replaced back to the original values if run through replaceItems().
-export function unreplaceItemsWithPlaceholders(utterance:string):string {
-  const words = utteranceToWords(utterance);
+export async function getItemsTextForEmbedding(replacedUtterance:string):Promise<string> {
+  assert(isValidUtterance(replacedUtterance));
+  const words = utteranceToWords(replacedUtterance);
   const unreplacedWords = words.map(word => {
-    return isMatchingParam(word, 'ITEMS') ? 'banana' : word;
+    return isMatchingParam(word, 'ITEMS') ? 'cherry pie' : word;
   });
   return wordsToUtterance(unreplacedWords);
 }
+
+const REPLACER:Replacer = {
+  id: 'ITEMS',
+  precedesReplacers: [numberReplacer.id],
+  onGetTextForEmbedding: getItemsTextForEmbedding,
+  onReplace: replaceItems,
+}
+
+export default REPLACER;

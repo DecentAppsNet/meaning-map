@@ -1,4 +1,4 @@
-import UnitVectorGroup, { duplicateUnitVectorGroup } from "@/embeddings/types/UnitVectorGroup";
+import UnitVectorGroup, { duplicateUnitVectorGroup, freezeUnitVectorGroup } from "@/embeddings/types/UnitVectorGroup";
 
 export const UNITIALIZED_VECTOR_GROUP:UnitVectorGroup = [];
 
@@ -24,6 +24,16 @@ export function duplicateMeaningMapNode(node:MeaningMapNode, parent:MeaningMapNo
   }
   nextNode.children = node.children.map(c => duplicateMeaningMapNode(c, nextNode));
   return nextNode;
+}
+
+export function freezeMeaningMapNode(node:MeaningMapNode):void {
+  Object.freeze(node);
+  Object.freeze(node.params);
+  Object.freeze(node.children);
+  freezeUnitVectorGroup(node.matchVectorGroup);
+  for(const child of node.children) {
+    freezeMeaningMapNode(child);
+  }
 }
 
 export default MeaningMapNode;
