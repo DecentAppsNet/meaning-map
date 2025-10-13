@@ -2,12 +2,14 @@ import { isPlainUtterance } from "@/sentenceParsing/utteranceUtil";
 import MeaningMap from "./types/MeaningMap";
 import MeaningMatch from "./types/MeaningMatch";
 import { assert } from '@/common/assertUtil';
-import { makeUtteranceReplacements } from "@/replacement/replaceUtil";
+import { getTextForEmbedding, makeUtteranceReplacements } from "@/replacement/replaceUtil";
 import UnitVector from "@/embeddings/types/UnitVector";
 import { embedSentence } from "@/transformersJs/transformersEmbedder";
 import { countVectorsInGroups, findBestVectorGroupMatch, findBestVectorGroupMatchWithStats } from "@/embeddings/vectorGroupUtil";
 import MeaningMapNode from "./types/MeaningMapNode";
 import MeaningMatchStats from "./types/MeaningMatchStats";
+import ReplacedValues from "@/replacement/types/ReplacedValues";
+import Replacer from "@/replacement/types/Replacer";
 
 function _createMeaningMatchStats():MeaningMatchStats {
   return {
@@ -42,20 +44,24 @@ async function _findBestMeaningMapNodeRecursively(utteranceVector:UnitVector, cu
   return _findBestMeaningMapNodeRecursively(utteranceVector, candidateChildren[candidateI], params, stats);
 }
 
-export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
+async function _getMatchInputs(plainUtterance:string, replacers:Replacer[]):Promise<[utteranceVector:UnitVector, replacedValues:ReplacedValues]> {
   assert(isPlainUtterance(plainUtterance));
-  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance, meaningMap.replacers);
-  const utteranceVector:UnitVector = await embedSentence(replacedUtterance);
+  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance, replacers);
+  const textForEmbedding = await getTextForEmbedding(replacedUtterance, replacers);
+  const utteranceVector = await embedSentence(textForEmbedding);
+  return [utteranceVector, replacedValues];
+}
+
+export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
+  const [utteranceVector, replacedValues] = await _getMatchInputs(plainUtterance, meaningMap.replacers);
   const bestNode = await _findBestMeaningMapNodeRecursively(utteranceVector, meaningMap.root, Object.keys(replacedValues));
   return bestNode === meaningMap.root ? null : { meaningId:bestNode.id, paramValues:replacedValues };
 }
 
 export async function matchMeaningWithStats(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
-  assert(isPlainUtterance(plainUtterance));
   const startTime = performance.now();
   const stats:MeaningMatchStats = _createMeaningMatchStats();
-  const [replacedUtterance, replacedValues] = await makeUtteranceReplacements(plainUtterance, meaningMap.replacers);
-  const utteranceVector:UnitVector = await embedSentence(replacedUtterance);
+  const [utteranceVector, replacedValues] = await _getMatchInputs(plainUtterance, meaningMap.replacers);
   const bestNode = await _findBestMeaningMapNodeRecursively(utteranceVector, meaningMap.root, Object.keys(replacedValues), stats);
   stats.matchMSecs = performance.now() - startTime;
   return bestNode === meaningMap.root ? null : { meaningId:bestNode.id, paramValues:replacedValues, stats };
