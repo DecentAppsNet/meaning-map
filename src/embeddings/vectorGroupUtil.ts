@@ -23,3 +23,30 @@ export function findBestVectorGroupMatch(vector:UnitVector, vectorGroups:UnitVec
   }
   return bestGroupI;
 }
+
+type MatchScore = {
+  score:number,
+  index:number
+}
+export function findBestVectorGroupMatchWithStats(vector:UnitVector, vectorGroups:UnitVectorGroup[], certaintyThreshold:number):[foundIndex:number, matchSeparation:number, matchScore:number] {
+  const matchScores:MatchScore[] = vectorGroups
+    .map((vectorGroup, index) => {
+      const score = compareVectorToGroup(vector, vectorGroup);
+      return { score, index };
+    })
+    .filter(matchScore => matchScore.score > certaintyThreshold)
+    .sort((a, b) => b.score - a.score);
+  
+  if (!matchScores.length) return [-1, 0, 0];
+
+  const bestScore = matchScores[0].score;
+  const secondBestScore = matchScores.length > 1 ? matchScores[1].score : 0;
+  const matchSeparation = bestScore - secondBestScore;
+  return [matchScores[0].index, matchSeparation, bestScore];
+}
+
+export function countVectorsInGroups(vectorGroups:UnitVectorGroup[]):number {
+  let total = 0;
+  vectorGroups.forEach(group => total += group.length);
+  return total;
+}

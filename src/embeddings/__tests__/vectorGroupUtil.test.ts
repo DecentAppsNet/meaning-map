@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { compareVectorToGroup, findBestVectorGroupMatch } from "../vectorGroupUtil";
+import { compareVectorToGroup, findBestVectorGroupMatch, findBestVectorGroupMatchWithStats } from "../vectorGroupUtil";
 import { embedSentence, isEmbedderInitialized, initEmbedder, embedSentences } from "../../transformersJs/transformersEmbedder";
 import UnitVector from "../types/UnitVector";
 import UnitVectorGroup from '../types/UnitVectorGroup';
@@ -96,6 +96,45 @@ describe('vectorGroupUtil', () => {
       expect(await _trySentence(`let's put all these ITEMS in NUMBER`, groups)).toEqual(ADDING_ITEMS_TO_NUMBER);
       expect(await _trySentence('i need an umbrella', groups)).toEqual(NO_MATCH);
       expect(await _trySentence('you should go to the store', groups)).toEqual(NO_MATCH);
+    });
+  });
+
+  describe('findBestVectorGroupMatchWithStats()', async () => {
+    const addingOnlyGroup = await embedSentences(['i am adding', 'adding stuff', 
+      'putting things in', `let's add some stuff`, `i'm adding things`]);
+    const addingItemsGroup = await embedSentences(['i am adding ITEMS', 'i am adding ITEMS to a container', 
+      `let's add ITEMS`, 'putting ITEMS in']);
+    const addingToNumberGroup = await embedSentences(['i am adding to NUMBER', 'add to NUMBER', 
+      'NUMBER is where i put this', 'this goes in NUMBER', `let's put things in NUMBER`]);
+    const addingItemsToNumberGroup = await embedSentences(['i am adding ITEMS to NUMBER', `let's add ITEMS to NUMBER`, 
+      'these ITEMS go in NUMBER', 'this ITEMS goes in NUMBER', 'put ITEMS into NUMBER']);
+    
+    it('returns stats when no groups are above threshold certainty', async () => {
+      const groups:UnitVectorGroup[] = [addingOnlyGroup, addingItemsGroup, addingToNumberGroup, addingItemsToNumberGroup];
+      const vector = await embedSentence('where did i put my umbrella');
+      const [matchI, matchSeparation, matchScore] = findBestVectorGroupMatchWithStats(vector, groups, .7);
+      expect(matchI).toEqual(-1);
+      expect(matchSeparation).toEqual(0);
+      expect(matchScore).toEqual(0);
+    });
+
+    it('returns stats when one group is above threshold certainty', async () => {
+      const groups:UnitVectorGroup[] = [addingOnlyGroup];
+      const vector = await embedSentence('let us add things');
+      const [matchI, matchSeparation, matchScore] = findBestVectorGroupMatchWithStats(vector, groups, .7);
+      expect(matchI).toEqual(0);
+      expect(matchSeparation).toEqual(matchScore);
+      expect(matchScore).toBeGreaterThan(.7);
+    });
+      
+    it('returns stats when at least two groups are above threshold certainty', async () => {
+      const groups:UnitVectorGroup[] = [addingOnlyGroup, addingItemsGroup, addingToNumberGroup, addingItemsToNumberGroup];
+      const vector = await embedSentence('i am adding things');
+      const [matchI, matchSeparation, matchScore] = findBestVectorGroupMatchWithStats(vector, groups, .7);
+      expect(matchI).toEqual(0);
+      expect(matchSeparation).toBeGreaterThan(.01);
+      expect(matchSeparation).toBeLessThan(1);
+      expect(matchScore).toBeGreaterThan(.7);
     });
   });
 });
