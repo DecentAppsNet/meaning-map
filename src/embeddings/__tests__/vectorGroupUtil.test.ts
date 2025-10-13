@@ -118,6 +118,15 @@ describe('vectorGroupUtil', () => {
       expect(matchScore).toEqual(0);
     });
 
+    it('returns stats when no groups are given', async () => {
+      const groups:UnitVectorGroup[] = [];
+      const vector = await embedSentence('where did i put my umbrella');
+      const [matchI, matchSeparation, matchScore] = findBestVectorGroupMatchWithStats(vector, groups, .7);
+      expect(matchI).toEqual(-1);
+      expect(matchSeparation).toEqual(0);
+      expect(matchScore).toEqual(0);
+    });
+
     it('returns stats when one group is above threshold certainty', async () => {
       const groups:UnitVectorGroup[] = [addingOnlyGroup];
       const vector = await embedSentence('let us add things');

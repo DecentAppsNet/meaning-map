@@ -29,19 +29,21 @@ type MatchScore = {
   index:number
 }
 export function findBestVectorGroupMatchWithStats(vector:UnitVector, vectorGroups:UnitVectorGroup[], certaintyThreshold:number):[foundIndex:number, matchSeparation:number, matchScore:number] {
-  const matchScores:MatchScore[] = vectorGroups
+  if (!vectorGroups.length) return [-1, 0, 0];
+
+  let matchScores:MatchScore[] = vectorGroups // Don't filter on certainty threshold yet, because I need to find the separation with 2nd best.
     .map((vectorGroup, index) => {
       const score = compareVectorToGroup(vector, vectorGroup);
       return { score, index };
     })
-    .filter(matchScore => matchScore.score > certaintyThreshold)
     .sort((a, b) => b.score - a.score);
   
-  if (!matchScores.length) return [-1, 0, 0];
-
   const bestScore = matchScores[0].score;
   const secondBestScore = matchScores.length > 1 ? matchScores[1].score : 0;
   const matchSeparation = bestScore - secondBestScore;
+
+  matchScores = matchScores.filter(ms => ms.score >= certaintyThreshold);
+  if (!matchScores.length) return [-1, 0, 0];
   return [matchScores[0].index, matchSeparation, bestScore];
 }
 
