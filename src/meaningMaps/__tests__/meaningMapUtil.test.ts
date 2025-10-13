@@ -30,6 +30,12 @@ describe('meaningMapUtil', () => {
       const match = await matchMeaning('this does not match', meaningMap);
       expect(match).toBeNull();
     });
+
+    it('avoids matching an utterance that is missing a required param', async () => {
+      const dilemmaMap = await loadMeaningMap(`# loves ITEMS >0\ni love ITEMS\n# hates things >0\ni hate this`);
+      const match = await matchMeaning('i love this', dilemmaMap); // intentionally chosen as close in meaning to first option, though lacking ITEMS param.
+      expect(match!.meaningId).toEqual(dilemmaMap.ids.hates_things);
+    });
   });
 
   describe('matchMeaningWithStats()', () => {

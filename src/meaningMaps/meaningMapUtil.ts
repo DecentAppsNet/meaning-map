@@ -17,22 +17,29 @@ function _createMeaningMatchStats():MeaningMatchStats {
   }
 }
 
+function _filterNodesByRequiredParams(nodes:MeaningMapNode[], params:string[]):MeaningMapNode[] {
+  return nodes.filter(node => {
+    return node.params.every(requiredParam => params.includes(requiredParam));
+  });
+}
+
 async function _findBestMeaningMapNodeRecursively(utteranceVector:UnitVector, currentNode:MeaningMapNode, 
     params:string[], stats?:MeaningMatchStats):Promise<MeaningMapNode> { // TODO - need to exclude nodes from comparison based on params.
-  if (!currentNode.children.length) return currentNode;
-  const childVectorGroups = currentNode.children.map(c => c.matchVectorGroup);
-  let nextNodeI:number;
+  const candidateChildren = _filterNodesByRequiredParams(currentNode.children, params);
+  if (!candidateChildren.length) return currentNode;
+  const candidateVectorGroups = candidateChildren.map(c => c.matchVectorGroup);
+  let candidateI:number;
   if (stats) {
     let childMatchSeparation:number, childMatchScore:number = 0;
-    [nextNodeI, childMatchSeparation, childMatchScore] = findBestVectorGroupMatchWithStats(utteranceVector, childVectorGroups, currentNode.matchThreshold);
+    [candidateI, childMatchSeparation, childMatchScore] = findBestVectorGroupMatchWithStats(utteranceVector, candidateVectorGroups, currentNode.matchThreshold);
     stats.nodeStats[currentNode.id] = { id:currentNode.id, childMatchScore, childMatchSeparation };
-    stats.comparisonCount += countVectorsInGroups(childVectorGroups);
+    stats.comparisonCount += countVectorsInGroups(candidateVectorGroups);
   } else {
-    nextNodeI = findBestVectorGroupMatch(utteranceVector, childVectorGroups, currentNode.matchThreshold);
+    candidateI = findBestVectorGroupMatch(utteranceVector, candidateVectorGroups, currentNode.matchThreshold);
   }
-  if (nextNodeI === -1) return currentNode;
-  assert(nextNodeI >= 0 && nextNodeI < currentNode.children.length);
-  return _findBestMeaningMapNodeRecursively(utteranceVector, currentNode.children[nextNodeI], params, stats);
+  if (candidateI === -1) return currentNode;
+  assert(candidateI >= 0 && candidateI < candidateChildren.length);
+  return _findBestMeaningMapNodeRecursively(utteranceVector, candidateChildren[candidateI], params, stats);
 }
 
 export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
