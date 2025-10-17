@@ -1,4 +1,4 @@
-import Replacer from "@/replacement/types/Replacer";
+import Replacer from "../../replacement/types/Replacer";
 import MeaningMapNode, { duplicateMeaningMapNode, freezeMeaningMapNode } from "./MeaningMapNode";
 
 type MeaningMap = {

@@ -1,4 +1,4 @@
-import UnitVectorGroup, { duplicateUnitVectorGroup, freezeUnitVectorGroup } from "@/embeddings/types/UnitVectorGroup";
+import UnitVectorGroup, { duplicateUnitVectorGroup, freezeUnitVectorGroup } from "../../embeddings/types/UnitVectorGroup";
 
 export const UNITIALIZED_VECTOR_GROUP:UnitVectorGroup = [];
 

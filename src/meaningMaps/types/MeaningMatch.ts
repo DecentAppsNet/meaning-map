@@ -1,4 +1,4 @@
-import ReplacedValues from "@/replacement/types/ReplacedValues";
+import ReplacedValues from "../../replacement/types/ReplacedValues";
 import MeaningMatchStats from "./MeaningMatchStats";
 
 type MeaningMatch = {

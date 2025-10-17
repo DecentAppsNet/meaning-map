@@ -1,8 +1,8 @@
 {
   "name": "meaning-map",
   "description": "Library for classifying text phrases to a predefined set of meanings",
-  "main": "dist/meaning-map.cjs.js",
-  "module": "dist/meaning-map.esm.js",
+  "main": "dist/meaning-map.cjs",
+  "module": "dist/meaning-map.js",
   "types": "dist/types/index.d.ts",
   "bin": {
     "mm": "./mm.sh"
