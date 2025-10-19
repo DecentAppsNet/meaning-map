@@ -9,8 +9,7 @@ const MODEL_NAME = 'mixedbread-ai/mxbai-embed-large-v1';
 
 export async function loadModel():Promise<Extractor> {
   const e:any = env as any;
-  e.platform === getRuntime();
-  if (e.platform === 'browser') {
+  if (getRuntime() === 'browser') {
     e.useBrowserCache =true;
     e.allowLocalModels = false;
   } else {

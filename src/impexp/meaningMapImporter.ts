@@ -139,6 +139,7 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
   const ids:{[name:string]:number} = {};
   const nodes:{[id:number]:MeaningMapNode} = {};
   let currentNode = root;
+  _addNodeToIndexes(root, ids, nodes, 0);
   for(let lineI = 0; lineI < lines.length; ++lineI) {
     const line = lines[lineI], lineNo = lineI+1;
     if (line.startsWith('#')) {
