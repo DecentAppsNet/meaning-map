@@ -39,6 +39,7 @@ datasets/*
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
 
 # O/S and 3rd-party noise
 .DS_Store
