@@ -4,6 +4,10 @@ import { getRuntime } from "@/common/runtimeUtil";
 import { baseUrl } from "@/common/urlUtil";
 import path from 'path';
 
+function _isDevServerFileNotFoundText(text:string):boolean {
+  return text.toLowerCase().startsWith('<!doctype html>');
+}
+
 export async function readSetFile(filename:string):Promise<Set<string>> {
   let text:string = '';
   if (getRuntime() === 'browser') {
@@ -11,7 +15,7 @@ export async function readSetFile(filename:string):Promise<Set<string>> {
     try {
       text = await fetchGetText(url);
     } catch {}
-    if (!text.length || text.startsWith('<!DOCTYPE html>')) {
+    if (!text.length || _isDevServerFileNotFoundText(text)) {
       throw new Error(`Failed to load dataset file from ${url}. Copy ${filename} from node_modules/meaning-map/datasets to a web-served /datasets folder for your app.`);
     }
   } else {

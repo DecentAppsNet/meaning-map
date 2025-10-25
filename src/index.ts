@@ -4,6 +4,7 @@ export { initialize, InitOption } from './initialization/initUtil';
 export { importMeaningMap, importMeaningMapFromFile, loadMeaningMap } from './impexp/meaningMapImporter';
 export { matchMeaning, matchMeaningWithStats } from './meaningMaps/meaningMapUtil';
 export { registerReplacer, unregisterReplacer, isReplacerRegistered, makeUtteranceReplacements } from './replacement/replaceUtil';
+export { isPlainUtterance, isValidUtterance, normalizeUtterance } from './sentenceParsing/utteranceUtil';
 
 export type { default as MeaningMap } from './meaningMaps/types/MeaningMap';
 export type { default as MeaningMapNode } from './meaningMaps/types/MeaningMapNode';

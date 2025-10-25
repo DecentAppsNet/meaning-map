@@ -5,6 +5,8 @@ import {
   subtractUnitVectors,
   averageUnitVectors,
   removeProjectionFromUnitVector,
+  unitVectorToBytes,
+  bytesToUnitVector,
 } from '../vectorUtil';
 
 function _magnitude(v: ArrayLike<number>) {
@@ -86,6 +88,16 @@ describe('vectorUtil', () => {
     it('throws when removing projection of a vector onto itself (zero result)', () => {
       const v = createUnitVector([1, 0]);
       expect(() => removeProjectionFromUnitVector(v, v)).toThrow();
+    });
+  });
+
+  describe('unitVectorToBytes() and bytesToUnitVector()', () => {
+    it('round-trips a unit vector through bytes', () => {
+      const original = createUnitVector(new Float32Array([1, 2, 3]));
+      const bytes = unitVectorToBytes(original);
+      expect(bytes.length).toBe(original.length * 4);
+      const roundTripped = bytesToUnitVector(bytes);
+      expect(compareUnitVectors(original, roundTripped)).toBeCloseTo(1, 3);
     });
   });
 });

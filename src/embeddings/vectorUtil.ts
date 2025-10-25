@@ -83,3 +83,12 @@ export function removeProjectionFromUnitVector(vector:UnitVector, projection:Uni
   for (let i = 0; i < vector.length; i++) result[i] = vector[i] - dotProduct * projection[i];
   return createUnitVector(result);
 }
+
+export function unitVectorToBytes(vector:UnitVector):Uint8Array {
+  return new Uint8Array(new Float32Array(vector).buffer);
+}
+
+export function bytesToUnitVector(bytes:Uint8Array):UnitVector {
+  const floatArray = new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+  return createUnitVector(floatArray);
+}

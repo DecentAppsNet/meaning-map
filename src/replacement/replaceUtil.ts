@@ -147,7 +147,7 @@ export function getReplacers(replacerIds:string[]):Replacer[] {
  * Tuple of [replacedUtterance, replacedValues].
  */
 export async function makeUtteranceReplacements(plainUtterance:string, replacers:Replacer[]):Promise<[replacedUtterance:string, ReplacedValues]> {
-  assert(isPlainUtterance(plainUtterance));
+  if (!isPlainUtterance(plainUtterance)) throw new Error('Utterance must be a plain utterance with no replacements made yet.');
   const replacedValues:ReplacedValues = {};
   let replacedUtterance = plainUtterance;
   for(let i = 0; i < replacers.length; ++i) {
