@@ -18,8 +18,23 @@ function _findBaseParamName(paramName:string):string {
   return paramName.slice(0, firstNonNumeric+1);
 }
 
+function _isParamAlphaChar(ch:string):boolean {
+  return (ch >= 'A' && ch <= 'Z');
+}
+
 export function isParam(word:string):boolean {
-  return word.toUpperCase() === word;
+  if (word.length === 0) return false;
+  if (!_isParamAlphaChar(word[0])) return false; // Param must start with an uppercase letter.
+  let i = 1;
+  for(; i < word.length; ++i) { // Scan past all the letters.
+    const ch = word[i];
+    if (!(ch >= 'A' && ch <= 'Z')) break;
+  }
+  for(; i < word.length; ++i) { // Scan past optional digits.
+    const ch = word[i];
+    if (!isDigitChar(ch)) return false;
+  }
+  return i === word.length; // If reached the end of the word, there was nothing besides expected letters/digits.
 }
 
 export function isMatchingParam(word:string, baseParamName:string):boolean {

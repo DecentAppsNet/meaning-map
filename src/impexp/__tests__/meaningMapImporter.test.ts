@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { loadMeaningMap } from "../meaningMapImporter";
 import exampleMeaningMapText from "./data/exampleMeaningMap";
 import { initEmbedder, isEmbedderInitialized } from '@/transformersJs/transformersEmbedder';
+import { meaningMapToText } from '../meaningMapExporter';
 
 describe('meaningMapImporter', () => {
   beforeAll(async () => {
@@ -60,6 +61,17 @@ describe('meaningMapImporter', () => {
       await expect(loadMeaningMap(text)).rejects.toThrow(/duplicate description found for heading/);
     });
 
+    it('loads inline embeddings correctly', async () => {
+      const text = `# category\ncategory\n`;
+      const meaningMap = await loadMeaningMap(text);
+      const textWithEmbeddings = await meaningMapToText(meaningMap, true);
+      const meaningMapUsingEmbeddings = await loadMeaningMap(textWithEmbeddings);
+      expect(meaningMap.nodes[1].matchVectorGroup.length).toBe(1);
+      expect(meaningMapUsingEmbeddings.nodes[1].matchVectorGroup.length).toBe(1);
+      const originalVector = meaningMap.nodes[1].matchVectorGroup[0];
+      const reloadedVector = meaningMapUsingEmbeddings.nodes[1].matchVectorGroup[0];
+      expect(originalVector.length).toBe(reloadedVector.length);
+    });
   });
 
 });

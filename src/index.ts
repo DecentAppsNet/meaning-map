@@ -2,6 +2,7 @@
 
 export { initialize, InitOption } from './initialization/initUtil';
 export { importMeaningMap, importMeaningMapFromFile, loadMeaningMap } from './impexp/meaningMapImporter';
+export { meaningMapToText } from './impexp/meaningMapExporter';
 export { matchMeaning, matchMeaningWithStats } from './meaningMaps/meaningMapUtil';
 export { registerReplacer, unregisterReplacer, isReplacerRegistered, makeUtteranceReplacements } from './replacement/replaceUtil';
 export { isPlainUtterance, isValidUtterance, normalizeUtterance } from './sentenceParsing/utteranceUtil';

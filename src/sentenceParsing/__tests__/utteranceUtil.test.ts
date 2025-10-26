@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeUtterance, isUtteranceNormalized, findParamsInUtterance,
   isMatchingParam, utteranceToWords, isValidUtterance, isPlainUtterance, wordsToUtterance, 
-  punctuatedToUtterance} from '../utteranceUtil';
+  punctuatedToUtterance,
+  isParam} from '../utteranceUtil';
 
 describe('utteranceUtil', () => {
   describe('normalizeUtterance()', () => {
@@ -90,6 +91,60 @@ describe('utteranceUtil', () => {
 
     it('preserves ALLCAPS tokens', () => {
       expect(wordsToUtterance(['MOVE','ITEMS','here'])).toBe('MOVE ITEMS here');
+    });
+  });
+
+  describe('isParam()', () => {
+    it('returns true for single-character all-caps word', () => {
+      expect(isParam('X')).toBe(true);
+    });
+
+    it('returns true for multi-character all-caps word', () => {
+      expect(isParam('ABC')).toBe(true);
+    });
+
+    it('returns true for param with single digit on end', () => {
+      expect(isParam('X2')).toBe(true);
+    });
+
+    it('returns true for param with multiple digits on end', () => {
+      expect(isParam('X52')).toBe(true);
+    });
+
+    it('returns false for empty string', () => {
+      expect(isParam('')).toBe(false);
+    });
+
+    it('returns false for lowercase word', () => {
+      expect(isParam('abc')).toBe(false);
+    });
+
+    it('returns false for mixed-case word', () => {
+      expect(isParam('AbC')).toBe(false);
+    });
+
+    it('returns false for all-caps word with internal digit', () => {
+      expect(isParam('AB2C')).toBe(false);
+    });
+
+    it('returns false for digit followed be all-caps', () => {
+      expect(isParam('2BC')).toBe(false);
+    });
+
+    it('returns false for word with non-alphanumeric character', () => {
+      expect(isParam('AB_C')).toBe(false);
+    });
+
+    it('returns false for word with only digits', () => {
+      expect(isParam('123')).toBe(false);
+    });
+
+    it('returns false for param with trailing whitespace', () => {
+      expect(isParam('ABC ')).toBe(false);
+    });
+
+    it('returns false for param with leading whitespace', () => {
+      expect(isParam(' ABC')).toBe(false);
     });
   });
 

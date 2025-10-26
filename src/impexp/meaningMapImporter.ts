@@ -1,11 +1,14 @@
 import MeaningMapNode, { UNITIALIZED_VECTOR_GROUP } from "../meaningMaps/types/MeaningMapNode";
 import MeaningMap, { freezeMeaningMap } from "../meaningMaps/types/MeaningMap";
 import { assert, assertNonNullable } from '@/common/assertUtil';
-import { embedSentences } from "@/transformersJs/transformersEmbedder";
+import { embedSentence, embedSentences } from "@/transformersJs/transformersEmbedder";
 import { findParamsInUtterance, isValidUtterance, normalizeUtterance } from "@/sentenceParsing/utteranceUtil";
 import { readTextFile } from "@/common/fileUtil";
 import Replacer from "@/replacement/types/Replacer";
 import { getReplacers, getTextForEmbedding, paramToReplacerId } from "@/replacement/replaceUtil";
+import UnitVector from "@/embeddings/types/UnitVector";
+import { bytesToUnitVector } from "@/embeddings/vectorUtil";
+import { base64ToBytes } from "./base64Util";
 
 const DEFAULT_MATCH_THRESHOLD = .6;
 
@@ -56,7 +59,7 @@ function _parseHeaderLine(line:string, defaultMatchThresholdId:number, lineNo:nu
   assert(descriptionPos >= 2); // Shortest valid heading would be "# x". Knowing that calling code would have thrown otherwise.
   if (descriptionPos >= line.length) throw _invalidFormatError(line, lineNo, 'header line does not contain a description');
   const matchThresholdPos = line.indexOf('>');
-  const description = matchThresholdPos === -1 ? line.substring(descriptionPos) : line.substring(descriptionPos, matchThresholdPos);
+  const description = matchThresholdPos === -1 ? line.substring(descriptionPos) : line.substring(descriptionPos, matchThresholdPos).trim();
   if (matchThresholdPos !== -1) matchThreshold = _parseMatchThreshold(line, matchThresholdPos, lineNo);
   const params = findParamsInUtterance(normalizeUtterance(description));
   return { description, params, matchThreshold };
@@ -117,9 +120,24 @@ async function _getSentencesToEmbed(sentencesToEmbed:SentenceToEmbed[], replacer
   return sentences;
 }
 
-async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[], replacers:Replacer[]) {
+async function _getMatchVectorsFromInlineEmbeddings(sentences:string[], inlineEmbeddings:{[sentence:string]:UnitVector}):Promise<UnitVector[]> {
+  const vectors:UnitVector[] = [];
+  for(const sentence of sentences) {
+    let vector = inlineEmbeddings[sentence];
+    if (!vector) { 
+      console.warn(`Missing inline embedding for sentence "${sentence}". Creating embedding now.`);
+      vector = await embedSentence(sentence); // Fallback to embedding if missing.
+    }
+    vectors.push(vector);
+  }
+  return vectors;
+}
+
+async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[], replacers:Replacer[], inlineEmbeddings:{[sentence:string]:UnitVector}) {
   const sentences = await _getSentencesToEmbed(sentencesToEmbed, replacers);
-  const vectors = await embedSentences(sentences);
+  const vectors = Object.keys(inlineEmbeddings).length !== 0 // Use inline embeddings if available to avoid embedding work.
+      ? await _getMatchVectorsFromInlineEmbeddings(sentences, inlineEmbeddings) 
+      : await embedSentences(sentences);
   assert(vectors.length === sentences.length);
   for(let sentenceI = 0; sentenceI < sentences.length; ++sentenceI) {
     const node = sentencesToEmbed[sentenceI].node;
@@ -129,19 +147,35 @@ async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[], replace
   }
 }
 
+function _addInlineEmbedding(line:string, inlineEmbeddings:{[sentence:string]:UnitVector}, lineNo:number) {
+  const equalPos = line.indexOf('=');
+  if (equalPos === -1) return; // Not an embedding line.
+  const sentence = line.substring(0, equalPos).trim();
+  const vectorBase64 = line.substring(equalPos + 1).trim();
+  if (!sentence.length || !vectorBase64.length) throw _invalidFormatError(line, lineNo, 'invalid inline embedding format');
+  const vectorBytes = base64ToBytes(vectorBase64);
+  const vector = bytesToUnitVector(vectorBytes);
+  inlineEmbeddings[sentence] = vector;
+}
+
 export async function loadMeaningMap(text:string):Promise<MeaningMap> {
   const lines = _textToLines(text);
   let nextId = 1;
   let depth = 0;
   const sentencesToEmbed:SentenceToEmbed[] = [];
+  const inlineEmbeddings:{[sentence:string]:UnitVector} = {};
   const root:MeaningMapNode = _createRootNode();
   const replacerIds:string[] = [];
   const ids:{[name:string]:number} = {};
   const nodes:{[id:number]:MeaningMapNode} = {};
   let currentNode = root;
+  let inComment = false;
   _addNodeToIndexes(root, ids, nodes, 0);
   for(let lineI = 0; lineI < lines.length; ++lineI) {
     const line = lines[lineI], lineNo = lineI+1;
+    if (line.startsWith('<!--')) { inComment = true; continue; }
+    if (line.endsWith('-->')) { inComment = false; continue; }
+    if (inComment) { _addInlineEmbedding(line, inlineEmbeddings, lineNo); continue; }
     if (line.startsWith('#')) {
       const nextDepth = _getLineDepth(line);
       if (nextDepth === -1) throw _invalidFormatError(line, lineNo, 'invalid section header syntax');
@@ -166,7 +200,7 @@ export async function loadMeaningMap(text:string):Promise<MeaningMap> {
     }
   }
   const replacers:Replacer[] = getReplacers(replacerIds);
-  await _addMatchVectorGroups(sentencesToEmbed, replacers);
+  await _addMatchVectorGroups(sentencesToEmbed, replacers, inlineEmbeddings);
   const meaningMap:MeaningMap = {root, ids, nodes, replacers};
   freezeMeaningMap(meaningMap);
   return meaningMap;
