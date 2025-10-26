@@ -53,12 +53,14 @@ async function _getMatchInputs(plainUtterance:string, replacers:Replacer[]):Prom
 }
 
 export async function matchMeaning(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
+  if (!isPlainUtterance(plainUtterance)) throw Error(`Utterance "${plainUtterance}" was not in plain format.`);
   const [utteranceVector, replacedValues] = await _getMatchInputs(plainUtterance, meaningMap.replacers);
   const bestNode = await _findBestMeaningMapNodeRecursively(utteranceVector, meaningMap.root, Object.keys(replacedValues));
   return bestNode === meaningMap.root ? null : { meaningId:bestNode.id, paramValues:replacedValues };
 }
 
 export async function matchMeaningWithStats(plainUtterance:string, meaningMap:MeaningMap):Promise<MeaningMatch|null> {
+  if (!isPlainUtterance(plainUtterance)) throw Error(`Utterance "${plainUtterance}" was not in plain format.`);
   const startTime = performance.now();
   const stats:MeaningMatchStats = _createMeaningMatchStats();
   const [utteranceVector, replacedValues] = await _getMatchInputs(plainUtterance, meaningMap.replacers);
