@@ -18,6 +18,7 @@ export function parseBasePathFromUriPath(path:string) {
 
 // The base path will be in a format like '/' (dev server), '/app/' (production), or '/_app/0a0a0a0/" (staging).
 function _getBasePath() {
+  /* v8 ignore next */
   if (!theBasePath) { theBasePath = parseBasePathFromUriPath(windowLocationPathname()); }
   return theBasePath;
 }
@@ -29,7 +30,7 @@ export function resetBasePath() {
 // Prepends the base path to a path to make relative URLs that work from dev server, production, or staging.
 export function baseUrl(path:string = '') {
   assert(!path.startsWith('http'), `only pass path to baseUrl() not a URL`);
-  if (path.startsWith('/')) { path = path.slice(1); }
+  if (path.startsWith('/')) path = path.slice(1);
   const basePath = _getBasePath();
   return `${basePath}${path}`;
 }

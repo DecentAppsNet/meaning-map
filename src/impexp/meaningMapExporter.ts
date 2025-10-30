@@ -4,6 +4,7 @@ import MeaningMap from "@/meaningMaps/types/MeaningMap";
 import MeaningMapNode from "@/meaningMaps/types/MeaningMapNode";
 import { getTextForEmbedding } from "@/replacement/replaceUtil";
 import { bytesToBase64 } from "./base64Util";
+import { assert, assertNonNullable } from "@/common/assertUtil";
 
 function _matchThresholdToText(matchThreshold:number):string {
   let numberText = '' + matchThreshold;
@@ -17,7 +18,9 @@ function _nodeToHeaderText(node:MeaningMapNode, depth:number):string {
     concat += '#';
   }
   concat += ' ' + node.description;
-  const parentThreshold = node.parent ? node.parent.matchThreshold : -1;
+  assert(depth > 0);
+  assertNonNullable(node.parent); // Should always be non-null for depth > 0
+  const parentThreshold = node.parent.matchThreshold;
   if (node.matchThreshold !== undefined && node.matchThreshold !== null && node.matchThreshold !== parentThreshold) {
     concat += _matchThresholdToText(node.matchThreshold);
   }

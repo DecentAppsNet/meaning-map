@@ -46,7 +46,6 @@ describe('meaningMapExporter', () => {
         const text = '# category\ncategory\n';
         const meaningMap = await loadMeaningMap(text);
         const exportedText = await meaningMapToText(meaningMap, true);
-        console.log(exportedText);
         expect(exportedText.startsWith(text)).toBe(true);
         expect(exportedText.includes('<!-- embeddings')).toBe(true);
         expect(exportedText.includes('-->')).toBe(true);

@@ -23,12 +23,16 @@ describe('urlUtil', () => {
       expect(parseBasePathFromUriPath('/')).toEqual('/');
     });
 
-    it('parses app name without /', () => {
+    it('parses app name without trailing /', () => {
       expect(parseBasePathFromUriPath('/app')).toEqual('/app/');
     });
 
-    it('parses app name with /', () => {
+    it('parses app name with trailing /', () => {
       expect(parseBasePathFromUriPath('/app/')).toEqual('/app/');
+    });
+
+    it('parses app name without leading /', () => {
+      expect(parseBasePathFromUriPath('app')).toEqual('/app/');
     });
 
     it('parses longer path without trailing /', () => {
@@ -105,6 +109,18 @@ describe('urlUtil', () => {
       theWindowLocationPathname = '/aissh/index.html';
       resetBasePath();
       expect(baseUrl()).toEqual('/aissh/');
+    });
+
+    it('returns base URL with appended path when path is not preceded with /', () => { // Possible? Not sure.
+      theWindowLocationPathname = '/aissh/';
+      resetBasePath();
+      expect(baseUrl('dog/foo.txt')).toEqual('/aissh/dog/foo.txt');
+    });
+
+    it('returns base URL with appended path when path is preceded with /', () => { // Possible? Not sure.
+      theWindowLocationPathname = '/aissh/';
+      resetBasePath();
+      expect(baseUrl('/dog/foo.txt')).toEqual('/aissh/dog/foo.txt');
     });
   });
 });

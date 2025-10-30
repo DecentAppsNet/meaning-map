@@ -36,6 +36,10 @@ describe('meaningMapUtil', () => {
       const match = await matchMeaning('i love this', dilemmaMap); // intentionally chosen as close in meaning to first option, though lacking ITEMS param.
       expect(match!.meaningId).toEqual(dilemmaMap.ids.hates_things);
     });
+
+    it('throws if utterance is not in plain format', async () => {
+      await expect(matchMeaning('Hello World', meaningMap)).rejects.toThrow();
+    });
   });
 
   describe('matchMeaningWithStats()', () => {
@@ -59,6 +63,10 @@ describe('meaningMapUtil', () => {
     it('returns null for non-matching utterance', async () => {
       const match = await matchMeaningWithStats('this does not match', meaningMap);
       expect(match).toBeNull();
+    });
+
+    it('throws if utterance is not in plain format', async () => {
+      await expect(matchMeaningWithStats('Hello World', meaningMap)).rejects.toThrow();
     });
   });
 });

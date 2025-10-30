@@ -47,9 +47,7 @@ function _parseMatchThreshold(line:string, matchThresholdPos:number, lineNo:numb
   if (matchThresholdPos >= line.length - 1) throw _invalidFormatError(line, lineNo, `">" must be followed by a number.`);
   const matchThresholdStr = line.substring(matchThresholdPos + 1).trim();
   const matchThreshold = Number(matchThresholdStr);
-  if (isNaN(matchThreshold) || matchThreshold < 0 || matchThreshold > 1) {
-    throw _invalidFormatError(line, lineNo, `">" must be followed by a number between 0 and 1.`);
-  }
+  if (isNaN(matchThreshold) || matchThreshold < 0 || matchThreshold > 1) throw _invalidFormatError(line, lineNo, `">" must be followed by a number between 0 and 1.`);
   return matchThreshold;
 }
 

@@ -226,5 +226,10 @@ describe('replaceUtil', () => {
       expect(utterance).toEqual('i have ITEMS that i will put in NUMBER');
       expect(values).toEqual({NUMBER: 'number twelve', ITEMS: 'shiny apples'});
     });
+
+    it('throws if utterance is not in plain format', async () => {
+      const replacers = getReplacers(['ITEMS', 'NUMBER']);
+      await expect(makeUtteranceReplacements('i have ITEMS', replacers)).rejects.toThrow();
+    });
   });
 });
