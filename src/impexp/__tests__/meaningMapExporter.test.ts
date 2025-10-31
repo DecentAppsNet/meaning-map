@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { meaningMapToText } from "../meaningMapExporter";
 import { loadMeaningMap } from '../meaningMapImporter';
+import { makeUtteranceReplacements } from '@/replacement/replaceUtil';
 
 describe('meaningMapExporter', () => {
   describe('meaningMapToText()', () => {
@@ -46,10 +47,25 @@ describe('meaningMapExporter', () => {
         const text = '# category\ncategory\n';
         const meaningMap = await loadMeaningMap(text);
         const exportedText = await meaningMapToText(meaningMap, true);
-        expect(exportedText.startsWith(text)).toBe(true);
-        expect(exportedText.includes('<!-- embeddings')).toBe(true);
-        expect(exportedText.includes('-->')).toBe(true);
-        expect(exportedText.includes('category=')).toBe(true);
+        let commentPos = exportedText.indexOf('<!-- embeddings');
+        expect(commentPos).toBeGreaterThan(-1);
+        let endCommentPos = exportedText.indexOf('-->', commentPos);
+        expect(endCommentPos).toBeGreaterThan(commentPos);
+        let embeddingsText = exportedText.substring(commentPos, endCommentPos);
+        expect(embeddingsText.includes('category=')).toBe(true);
+      });
+
+      it('exports a map with embedding that has replaced text in key', async () => {
+        const text = '# i have ITEMS\ni have ITEMS\n';
+        const meaningMap = await loadMeaningMap(text);
+        const exportedText = await meaningMapToText(meaningMap, true);
+        let commentPos = exportedText.indexOf('<!-- embeddings');
+        expect(commentPos).toBeGreaterThan(-1);
+        let endCommentPos = exportedText.indexOf('-->', commentPos);
+        expect(endCommentPos).toBeGreaterThan(commentPos);
+        let embeddingsText = exportedText.substring(commentPos, endCommentPos);
+        const replacedKey = await meaningMap.replacers[0].onGetTextForEmbedding('i have ITEMS');
+        expect(embeddingsText.includes(replacedKey)).toBe(true);
       });
     });
   });

@@ -22,9 +22,22 @@ describe('meaningMapImporter', () => {
       const meaningMap = await loadMeaningMap(exampleMeaningMapText);
       expect(meaningMap).toBeDefined();
     });
+
     it('throws on invalid section header syntax', async () => {
       const text = `#x invalid`; // missing space after '#'
       await expect(loadMeaningMap(text)).rejects.toThrow(/invalid section header syntax/);
+    });
+
+    it('loads meaning map with replacers', async () => {
+      const text = `# add ITEMS >0\ni want to add ITEMS\n`;
+      const meaningMap = await loadMeaningMap(text);
+      expect(meaningMap).toBeDefined();
+      const node = meaningMap.nodes[1];
+      expect(node).toBeDefined();
+      expect(node.matchVectorDescriptions.length).toBe(1);
+      expect(node.matchVectorDescriptions[0]).toBe('i want to add ITEMS');
+      expect(meaningMap.replacers.length).toBe(1);
+      expect(meaningMap.replacers[0].id).toBe('ITEMS');
     });
 
     it('throws when depth increases by more than one', async () => {

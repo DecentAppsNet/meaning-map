@@ -137,11 +137,12 @@ async function _addMatchVectorGroups(sentencesToEmbed:SentenceToEmbed[], replace
       ? await _getMatchVectorsFromInlineEmbeddings(sentences, inlineEmbeddings) 
       : await embedSentences(sentences);
   assert(vectors.length === sentences.length);
+  assert(sentences.length === sentencesToEmbed.length); // Code below that assigns original sentence to descriptions breaks if this becomes untrue.
   for(let sentenceI = 0; sentenceI < sentences.length; ++sentenceI) {
     const node = sentencesToEmbed[sentenceI].node;
     if (node.matchVectorGroup === UNITIALIZED_VECTOR_GROUP) node.matchVectorGroup = [];
     node.matchVectorGroup.push(vectors[sentenceI]);
-    node.matchVectorDescriptions.push(sentences[sentenceI]);
+    node.matchVectorDescriptions.push(sentencesToEmbed[sentenceI].sentence); // Use original sentence, not the one modified for embedding.
   }
 }
 
