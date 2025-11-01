@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { meaningMapToText } from "../meaningMapExporter";
 import { loadMeaningMap } from '../meaningMapImporter';
-import { makeUtteranceReplacements } from '@/replacement/replaceUtil';
 
 describe('meaningMapExporter', () => {
   describe('meaningMapToText()', () => {
