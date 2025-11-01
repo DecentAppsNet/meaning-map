@@ -1,10 +1,10 @@
-import UnitVector from "@/embeddings/types/UnitVector";
-import { unitVectorToBytes } from "@/embeddings/vectorUtil";
-import MeaningMap from "@/meaningMaps/types/MeaningMap";
-import MeaningMapNode from "@/meaningMaps/types/MeaningMapNode";
-import { getTextForEmbedding } from "@/replacement/replaceUtil";
+import UnitVector from "../embeddings/types/UnitVector";
+import { unitVectorToBytes } from "../embeddings/vectorUtil";
+import MeaningMap from "../meaningMaps/types/MeaningMap";
+import MeaningMapNode from "../meaningMaps/types/MeaningMapNode";
+import { getTextForEmbedding } from "../replacement/replaceUtil";
 import { bytesToBase64 } from "./base64Util";
-import { assert, assertNonNullable } from "@/common/assertUtil";
+import { assert, assertNonNullable } from "../common/assertUtil";
 
 function _matchThresholdToText(matchThreshold:number):string {
   let numberText = '' + matchThreshold;
